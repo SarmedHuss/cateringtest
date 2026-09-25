@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Catering Order Book</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Order Book">
+<meta name="theme-color" content="#F3F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111614" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+html{-webkit-text-size-adjust:100%}
+:root{color-scheme:light}
+body{margin:0;font-family:system-ui,-apple-system,sans-serif;font-size:14px;background:#F3F5F2;overscroll-behavior-y:none}
+img{max-width:100%}
+[hidden]{display:none!important}
+@font-face{font-family:"Figtree";font-style:normal;font-weight:400;font-display:swap;src:url("fonts/figtree-400.woff2") format("woff2")}
+@font-face{font-family:"Figtree";font-style:normal;font-weight:500;font-display:swap;src:url("fonts/figtree-500.woff2") format("woff2")}
+@font-face{font-family:"Figtree";font-style:normal;font-weight:600;font-display:swap;src:url("fonts/figtree-600.woff2") format("woff2")}
+@font-face{font-family:"Figtree";font-style:normal;font-weight:700;font-display:swap;src:url("fonts/figtree-700.woff2") format("woff2")}
+@font-face{font-family:"Bricolage Grotesque";font-style:normal;font-weight:600;font-display:swap;src:url("fonts/bricolage-600.woff2") format("woff2")}
+@font-face{font-family:"Bricolage Grotesque";font-style:normal;font-weight:700;font-display:swap;src:url("fonts/bricolage-700.woff2") format("woff2")}
+</style>
+</head>
+<body>
+<style>
+:root{
+  --bg:#F3F5F2; --surface:#FFFFFF; --surface-2:#E9EDE8; --line:#D9DFD8;
+  --ink:#18221E; --muted:#5F6B66; --accent:#0E6B5A; --accent-ink:#FFFFFF; --accent-soft:#D6EAE4;
+  --saffron:#B7791F; --saffron-soft:#F6E8CF;
+  --good:#2A7A48; --good-soft:#DCEFE2; --bad:#B23A2E; --bad-soft:#F6DEDA;
+  --shadow:0 1px 2px rgba(24,34,30,.06),0 4px 16px rgba(24,34,30,.06);
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,-apple-system,sans-serif;
+  --body:"Figtree",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#111614; --surface:#1A211E; --surface-2:#232C28; --line:#2E3834;
+    --ink:#E7ECE9; --muted:#9BA7A1; --accent:#3DB89D; --accent-ink:#0B1411; --accent-soft:#1D3A33;
+    --saffron:#E0A94A; --saffron-soft:#3A2F1C;
+    --good:#5CC381; --good-soft:#1C3325; --bad:#EE7B6E; --bad-soft:#3D2220;
+    --shadow:0 1px 2px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#111614; --surface:#1A211E; --surface-2:#232C28; --line:#2E3834;
+  --ink:#E7ECE9; --muted:#9BA7A1; --accent:#3DB89D; --accent-ink:#0B1411; --accent-soft:#1D3A33;
+  --saffron:#E0A94A; --saffron-soft:#3A2F1C;
+  --good:#5CC381; --good-soft:#1C3325; --bad:#EE7B6E; --bad-soft:#3D2220;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;max-width:640px;margin:0 auto}
+.top h1{font-family:var(--display);font-size:22px;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.iconbtn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 11px;font-size:13px;font-weight:600;color:var(--muted)}
+
+main{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:4px 120px;display:flex;flex-direction:column;gap:18px}
+section{display:flex;flex-direction:column;gap:10px}
+h2{font-family:var(--display);font-size:17px;margin:0;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+h2 small{font-family:var(--body);font-size:13px;color:var(--muted);font-weight:500;white-space:nowrap}
+.label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}
+
+.banner{background:var(--saffron-soft);color:var(--ink);border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px;align-items:center;justify-content:space-between}
+.banner button{border:0;background:var(--surface);border-radius:8px;padding:6px 10px;font-weight:600;font-size:13px;white-space:nowrap}
+
+.monthbar{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px}
+.monthbar button{border:0;background:transparent;width:40px;height:36px;border-radius:9px;font-size:18px;color:var(--muted)}
+.monthbar button:active{background:var(--surface-2)}
+.monthbar strong{font-family:var(--display);font-size:16px}
+
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px 11px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi b{font-family:var(--display);font-size:clamp(15px,4.8vw,21px);white-space:nowrap}
+.kpi.profit .label{white-space:nowrap}
+.kpi b .cc{display:block;font-family:var(--body);font-size:11px;font-weight:700;letter-spacing:.06em;opacity:.7;line-height:1.2}
+.kpi.profit b .cc{display:inline}
+.kpi.profit{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:2px 10px}
+.kpi.profit b{margin-left:auto}
+.kpi.profit b{font-size:clamp(19px,6.2vw,26px)}
+.kpi.profit{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.kpi.profit .label{color:var(--accent-ink);opacity:.8}
+.kpi.neg{background:var(--bad);border-color:var(--bad)}
+.sub{margin:-8px 0 0;color:var(--muted);font-size:14px}
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.step{display:flex;flex-direction:column;gap:6px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.step i{height:5px;border-radius:9px;background:var(--line)}
+.step.done i{background:var(--accent)}
+.step.done{color:var(--ink)}
+.step.now{color:var(--accent)}
+.next{background:var(--surface);border:2px solid var(--accent);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.next.ok{border-color:var(--good)}
+.next h3{font-family:var(--display);font-size:19px;margin:0}
+.next p{margin:0}
+.next .acts{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.payhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.payhead b{font-family:var(--display);font-size:20px}
+.progress{height:8px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--good);border-radius:99px}
+.err{margin:0;color:var(--bad);background:var(--bad-soft);border-radius:10px;padding:8px 10px;font-size:13.5px;font-weight:600}
+
+.list{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.row{display:flex;align-items:center;gap:12px;padding:12px;border:0;border-top:1px solid var(--line);background:transparent;width:100%;text-align:left}
+.row:first-child{border-top:0}
+button.row:active{background:var(--surface-2)}
+.row .main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.row .t{font-weight:600;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere;line-height:1.3}
+.row .s{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .end{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.row .amt{font-weight:700}
+.empty{padding:18px 14px;color:var(--muted);font-size:14px;text-align:center}
+
+.datebox{width:46px;flex-shrink:0;text-align:center;border-radius:10px;background:var(--surface-2);padding:5px 0 6px;line-height:1.05}
+.datebox .d{font-family:var(--display);font-size:20px;display:block}
+.datebox .m{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+
+.pill{display:inline-flex;align-items:center;font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.p-inquiry{background:var(--saffron-soft);color:var(--saffron)}
+.p-confirmed{background:var(--accent-soft);color:var(--accent)}
+.p-done{background:var(--surface-2);color:var(--muted)}
+.p-cancelled{background:var(--bad-soft);color:var(--bad)}
+.p-good{background:var(--good-soft);color:var(--good)}
+.p-warn{background:var(--saffron-soft);color:var(--saffron)}
+.p-bad{background:var(--bad-soft);color:var(--bad)}
+.pos{color:var(--good)} .neg-t{color:var(--bad)}
+
+.openbox{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px;background:var(--bad-soft);border-radius:14px 14px 0 0}
+.openbox b{font-family:var(--display);font-size:20px;color:var(--bad)}
+
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13.5px;font-weight:600;white-space:nowrap;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.search{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;font-size:16px}
+.grouphead{margin-top:6px}
+
+/* calendar */
+.cal{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+.cal .wd{font-size:11px;font-weight:700;color:var(--muted);text-align:center;padding:4px 0}
+.day{border:0;background:transparent;min-width:0;padding-inline:0;border-radius:9px;aspect-ratio:1/1.05;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:6px;gap:3px;font-variant-numeric:tabular-nums;font-size:14px;max-width:100%}
+.day.out{color:var(--muted);opacity:.4}
+.day.today span{background:var(--ink);color:var(--bg);border-radius:999px;width:24px;height:24px;display:grid;place-items:center;font-weight:700}
+.day[aria-selected="true"]{background:var(--accent-soft)}
+.dots{display:flex;gap:3px;height:6px}
+.dot{width:6px;height:6px;border-radius:50%}
+.dot.inquiry{background:var(--saffron)} .dot.confirmed{background:var(--accent)} .dot.done{background:var(--muted)} .dot.cancelled{background:var(--bad)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+
+/* finance */
+.bars{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.bar{display:grid;grid-template-columns:118px 1fr auto;gap:10px;align-items:center;font-size:13.5px}
+.bar .track{height:10px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.bar .fill{height:100%;background:var(--saffron);border-radius:99px}
+.chartbox{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 8px 6px}
+.chartbox svg{width:100%;height:auto;display:block}
+
+/* bottom nav + fab */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:repeat(4,1fr)}
+nav.tabs button{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;font-weight:600;color:var(--muted);padding:4px 0}
+nav.tabs svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+nav.tabs button[aria-current="page"]{color:var(--accent)}
+.fab{position:fixed;right:16px;bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:7;width:56px;height:56px;border-radius:18px;border:0;background:var(--accent);color:var(--accent-ink);font-size:30px;line-height:1;box-shadow:0 6px 18px rgba(14,107,90,.35)}
+@media (min-width:680px){.fab{right:calc(50% - 320px + 16px)}}
+
+/* sheet */
+.scrim{position:fixed;inset:0;z-index:20;background:rgba(10,16,14,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:92%;overflow-y:auto;border-radius:20px 20px 0 0;padding:8px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px;animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}}
+.grab{width:40px;height:4px;border-radius:9px;background:var(--line);margin:4px auto 0}
+.sheethead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.sheethead h3{font-family:var(--display);font-size:21px;margin:0;text-wrap:balance}
+.close{border:0;background:var(--surface-2);border-radius:999px;width:32px;height:32px;font-size:18px;color:var(--muted);flex-shrink:0}
+form{display:flex;flex-direction:column;gap:12px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:13px;font-weight:600;color:var(--muted)}
+.field input,.field select,.field textarea{border:1px solid var(--line);background:var(--surface);border-radius:11px;padding:11px 12px;width:100%;font-size:16px}
+.field textarea{min-height:70px;resize:vertical}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface-2);border-radius:11px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;border-radius:9px;padding:8px 4px;font-weight:600;font-size:13.5px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.btn{border:0;border-radius:12px;padding:13px 14px;font-weight:700;background:var(--accent);color:var(--accent-ink);font-size:15px}
+.btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:transparent;color:var(--bad);border:1px solid var(--bad-soft)}
+.btn.danger.armed{background:var(--bad);color:#fff}
+.btnrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px}
+.kv dt{color:var(--muted);font-size:13.5px}
+.kv dd{margin:0;text-align:right;font-weight:600;overflow-wrap:anywhere}
+.kv .sep{grid-column:1/-1;border-top:1px solid var(--line);margin:2px 0}
+.copy{border:0;background:var(--surface-2);border-radius:7px;padding:2px 7px;font-size:12px;margin-left:6px;color:var(--muted);font-weight:600}
+.txdel{border:0;background:transparent;color:var(--muted);font-size:13px;padding:4px 6px;border-radius:7px}
+.txdel.armed{background:var(--bad);color:#fff}
+.menu{display:flex;flex-direction:column;gap:8px}
+.menu .btn{text-align:left;display:flex;justify-content:space-between;align-items:center}
+.menu .btn span{font-weight:500;font-size:13px;opacity:.85}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-weight:600;font-size:14px;z-index:40;white-space:nowrap;max-width:calc(100% - 32px);overflow:hidden;text-overflow:ellipsis}
+.cur{display:inline-grid;grid-auto-flow:column;background:var(--surface-2);border-radius:10px;padding:3px;gap:3px}
+.cur button{border:0;background:transparent;border-radius:8px;padding:8px 12px;font-weight:700;font-size:14px;color:var(--muted)}
+.cur button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.pricerow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+.hint{margin:0;font-size:13px;color:var(--muted)}
+.rate{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:600}
+.rate input{width:130px;border:1px solid var(--line);background:var(--surface);border-radius:11px;padding:10px 12px;font-size:16px}
+</style>
+
+<header class="top">
+  <h1 id="apptitle">Order Book</h1>
+  <button class="iconbtn" id="btn-data" data-act="data">Settings</button>
+</header>
+<main id="view"></main>
+<button class="fab" id="fab" data-act="plus" aria-label="Add new">+</button>
+<nav class="tabs" id="tabs">
+  <button data-tab="home"><svg viewBox="0 0 24 24"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>Overview</button>
+  <button data-tab="orders"><svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>Orders</button>
+  <button data-tab="cal"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>Calendar</button>
+  <button data-tab="fin"><svg viewBox="0 0 24 24"><path d="M5 19V11M10 19V6M15 19v-5M20 19V9"/></svg>Money</button>
+</nav>
+<div id="sheet-root"></div>
+
+<script>
+(function(){
+"use strict";
+const KEY = "catering-auftragsbuch-v1";
+const VERSION = 2;
+const STATUS = {inquiry:"Inquiry", confirmed:"Confirmed", done:"Done", cancelled:"Cancelled"};
+const TYPES = ["Wedding","Engagement","Birthday","Graduation","Corporate event","Condolence (Fatiha)","Religious occasion","Other"];
+const CAT_IN = ["Deposit","Final payment","Payment","Other income"];
+const CAT_OUT = ["Food","Drinks","Staff","Equipment & rental","Transport","Fixed costs","Other"];
+const CUR = {USD:"$", IQD:"IQD"};
+const DEFAULT_RATE = 1590; // IQD per 1 USD, Baghdad market rate, Sept 2026
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MSHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const WEEK = ["Sat","Sun","Mon","Tue","Wed","Thu","Fri"]; // week starts Saturday
+
+/* ---------- money ---------- */
+const NF = {
+  USD2:new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}),
+  USD0:new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}),
+  IQD:new Intl.NumberFormat("en-US",{maximumFractionDigits:0}),
+  plain:new Intl.NumberFormat("en-US",{maximumFractionDigits:2}),
+  compact:new Intl.NumberFormat("en-US",{notation:"compact",maximumFractionDigits:1})
+};
+const roundC = (v,c) => c==="IQD" ? Math.round(v) : Math.round(v*100)/100;
+function fmt(v,c){
+  v = roundC(v||0,c);
+  if(c==="IQD") return (v<0?"−":"")+"IQD "+NF.IQD.format(Math.abs(v));
+  const s = (Math.round(v*100)%100===0 ? NF.USD0 : NF.USD2).format(Math.abs(v));
+  return (v<0?"−":"")+s;
+}
+function fmtCompact(v,c){ const s=NF.compact.format(Math.abs(v)); return (v<0?"−":"+")+(c==="IQD"?"IQD "+s:"$"+s); }
+function conv(v,from,to){ if(from===to) return v; const r=S.settings.rate; return from==="USD" ? v*r : v/r; }
+const main = () => S.settings.main;
+const M = v => fmt(v, main());
+/* Accepts "1,250.50", "1250", "1250.5", "1,250,000", "250.000" (IQD), "$1,250", Arabic-Indic digits */
+function parseAmount(str, c){
+  let s = String(str??"")
+    .replace(/[٠-٩]/g,d=>String(d.charCodeAt(0)-0x0660))
+    .replace(/[۰-۹]/g,d=>String(d.charCodeAt(0)-0x06F0))
+    .replace(/٫/g,".").replace(/٬/g,",")
+    .replace(/[^\d.,]/g,"");
+  if(!s) return NaN;
+  const hasC = s.includes(","), hasD = s.includes(".");
+  if(hasC && hasD){ if(s.lastIndexOf(",") > s.lastIndexOf(".")) s = s.replace(/\./g,"").replace(",","."); else s = s.replace(/,/g,""); }
+  else if(hasC){ s = /^\d{1,3}(,\d{3})+$/.test(s) ? s.replace(/,/g,"") : s.replace(",","."); }
+  else if(hasD){ if(/^\d{1,3}(\.\d{3}){2,}$/.test(s) || (c==="IQD" && /^\d{1,3}(\.\d{3})+$/.test(s))) s = s.replace(/\./g,""); }
+  if(!/^\d+(\.\d+)?$/.test(s)) return NaN;
+  return roundC(parseFloat(s), c);
+}
+const fmtInput = (v,c) => (v===""||v==null) ? "" : (c==="IQD" ? NF.IQD.format(v) : NF.plain.format(v));
+
+/* ---------- helpers ---------- */
+const esc = s => String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+const uid = () => Math.random().toString(36).slice(2,10);
+const pad = n => String(n).padStart(2,"0");
+const iso = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const todayISO = iso(new Date());
+const toDate = s => new Date(s+"T00:00:00");
+const ym = s => s.slice(0,7);
+const fmtLong = s => toDate(s).toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+const fmtMed = s => toDate(s).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
+const fmtShort = s => toDate(s).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
+const isDate = d => typeof d==="string" && /^\d{4}-\d{2}-\d{2}$/.test(d) && !isNaN(toDate(d));
+const plural = (n,w) => n+" "+w+(n===1?"":"s");
+
+/* ---------- data ---------- */
+const LEGACY = {
+  status:{anfrage:"inquiry",bestaetigt:"confirmed",erledigt:"done",storniert:"cancelled"},
+  kind:{ein:"in",aus:"out"},
+  type:{Hochzeit:"Wedding",Geburtstag:"Birthday",Abschlussfeier:"Graduation",Taufe:"Religious occasion",Firmenfeier:"Corporate event",Trauerfeier:"Condolence (Fatiha)",Sonstiges:"Other"},
+  cat:{Anzahlung:"Deposit",Restzahlung:"Final payment",Zahlung:"Payment","Sonstige Einnahme":"Other income",Lebensmittel:"Food","Getränke":"Drinks",Personal:"Staff","Equipment & Miete":"Equipment & rental",Transport:"Transport",Fixkosten:"Fixed costs",Sonstiges:"Other"}
+};
+function normalize(d){
+  if(!d || !Array.isArray(d.orders) || !Array.isArray(d.tx)) throw new Error("not a backup");
+  if(!d.v && d.sample) return seed();                         // old German sample data → fresh English sample
+  const str = v => v==null ? "" : String(v);
+  const st = d.settings||{};
+  const settings = {main: CUR[st.main]?st.main:"USD", rate: Number(st.rate)>0 ? Number(st.rate) : DEFAULT_RATE, lastBackup: isDate(st.lastBackup) ? st.lastBackup : ""};
+  const cur = c => CUR[c] ? c : settings.main;
+  const orders = d.orders.filter(o=>o && isDate(o.date)).map(o=>{
+    const c = cur(o.currency);
+    const status = STATUS[o.status] ? o.status : (LEGACY.status[o.status]||"inquiry");
+    const type = TYPES.includes(o.type) ? o.type : (LEGACY.type[o.type]||"Other");
+    return {id:str(o.id)||uid(), title:str(o.title)||"Untitled", type, date:o.date, time:str(o.time), customer:str(o.customer),
+      phone:str(o.phone), location:str(o.location), guests:str(o.guests), price:roundC(Math.max(0,Number(o.price)||0),c), currency:c, status, notes:str(o.notes)};
+  });
+  const oc = new Map(orders.map(o=>[o.id,o.currency]));
+  const tx = d.tx.map(t=>t && ({...t, kind: t.kind==="in"||t.kind==="out" ? t.kind : LEGACY.kind[t.kind]}))
+    .filter(t=>t && t.kind && Number(t.amount)>0 && isDate(t.date)).map(t=>{
+      const orderId = oc.has(t.orderId) ? t.orderId : null;
+      const c = CUR[t.currency] ? t.currency : (orderId ? oc.get(orderId) : settings.main);
+      const cats = t.kind==="in" ? CAT_IN : CAT_OUT;
+      const category = cats.includes(t.category) ? t.category : (LEGACY.cat[t.category] && cats.includes(LEGACY.cat[t.category]) ? LEGACY.cat[t.category] : (str(t.category)||cats[cats.length-1]));
+      return {id:str(t.id)||uid(), orderId, kind:t.kind, category, amount:roundC(Number(t.amount),c), currency:c, date:t.date, note:str(t.note)};
+    });
+  return {v:VERSION, sample:!!d.sample && d.v===VERSION, settings, orders, tx};
+}
+function seed(){
+  const o = (id,title,type,date,time,customer,phone,location,guests,price,currency,status,notes)=>({id,title,type,date,time,customer,phone,location,guests,price,currency,status,notes});
+  const t = (orderId,kind,category,amount,currency,date,note)=>({id:uid(),orderId,kind,category,amount,currency,date,note:note||""});
+  return {
+    v:VERSION, sample:true, settings:{main:"USD", rate:DEFAULT_RATE, lastBackup:""},
+    orders:[
+      o("o7","Summer party, Al-Noor kindergarten","Other","2026-07-11","16:00","Mrs. Huda (director)","0770 412 3388","Kindergarten garden","90",1900000,"IQD","done",""),
+      o("o8","Graduation, College of Engineering","Graduation","2026-08-22","18:00","Class committee, Omar","0781 220 5541","University club hall","140",3000,"USD","done",""),
+      o("o1","Wedding Ahmed & Zainab","Wedding","2026-09-12","19:00","Ahmed Kareem","0770 123 4567","Wedding hall, Mansour","300",6500,"USD","done","Open buffet, 3 lamb quzi, sweets table. Cake from the family."),
+      o("o2","Birthday Hussein (40)","Birthday","2026-09-19","20:00","Hussein Ali","0780 998 7766","Family home, Karrada","45",1800000,"IQD","done","Finger food and grill. Family provides plates."),
+      o("o3","Graduation dinner, Class of 2026","Graduation","2026-10-02","18:30","Parents' committee, Mrs. Suha","0750 445 5667","School hall, Adhamiya","120",4800000,"IQD","confirmed","Welcome drinks and dinner buffet. Set-up from 4 pm."),
+      o("o4","Engagement Ali & Noor","Engagement","2026-10-17","19:00","Noor Hassan","0771 112 2334","Garden venue, Jadriya","150",2800,"USD","confirmed","Tasting on 3 Oct. 3 guests need gluten-free."),
+      o("o5","Fatiha for Hajj Abbas","Condolence (Fatiha)","2026-10-25","12:00","Mustafa Abbas","0790 556 6778","Family majlis, Zayouna","200",2500000,"IQD","inquiry","Lunch for 3 days? Send quote by 30 Sep."),
+      o("o6","Company dinner, Tigris Logistics","Corporate event","2026-11-06","20:00","Sara Jameel","0772 334 4556","Company rooftop","60",1500,"USD","inquiry","Wants a grill station. Ask about tent.")
+    ],
+    tx:[
+      t("o7","in","Payment",1900000,"IQD","2026-07-11"),
+      t("o7","out","Food",720000,"IQD","2026-07-10"),
+      t("o7","out","Staff",300000,"IQD","2026-07-11","3 helpers"),
+      t(null,"in","Other income",150000,"IQD","2026-07-20","Rented out chafing dishes"),
+      t("o8","in","Deposit",1000,"USD","2026-06-20"),
+      t("o8","out","Food",1650000,"IQD","2026-08-21","Jameela market"),
+      t("o8","out","Staff",600000,"IQD","2026-08-22","6 helpers"),
+      t("o8","in","Final payment",2000,"USD","2026-08-24"),
+      t(null,"out","Fixed costs",100,"USD","2026-08-01","Kitchen rent"),
+      t("o1","in","Deposit",2000,"USD","2026-08-01"),
+      t("o1","out","Food",3200000,"IQD","2026-09-10","Lamb and rice"),
+      t("o1","out","Drinks",450000,"IQD","2026-09-10"),
+      t("o1","out","Staff",1200000,"IQD","2026-09-12","10 helpers"),
+      t("o1","out","Equipment & rental",150,"USD","2026-09-11","Chafing dishes, glasses"),
+      t("o1","in","Final payment",4500,"USD","2026-09-14"),
+      t("o2","in","Deposit",500000,"IQD","2026-09-01"),
+      t("o2","out","Food",650000,"IQD","2026-09-18"),
+      t("o2","out","Staff",200000,"IQD","2026-09-19","2 helpers"),
+      t("o3","in","Deposit",1500000,"IQD","2026-09-15"),
+      t("o3","out","Drinks",250000,"IQD","2026-09-22","Juice pre-ordered"),
+      t("o4","in","Deposit",800,"USD","2026-09-05"),
+      t(null,"out","Fixed costs",100,"USD","2026-09-01","Kitchen rent"),
+      t(null,"out","Transport",60000,"IQD","2026-09-18","Fuel for the van")
+    ]
+  };
+}
+let storageOK = true;
+const IN_FRAME = (()=>{ try{ return window.self!==window.top; }catch(e){ return true; } })();
+const BACKUP_DAYS = 14;
+function backupDue(){
+  if(S.sample || (!S.orders.length && !S.tx.length)) return false;
+  return !S.settings.lastBackup || daysUntil(S.settings.lastBackup) <= -BACKUP_DAYS;
+}
+async function exportBackup(){
+  const txt = JSON.stringify(S, null, 1);
+  const name = "order-book-backup-"+todayISO+".json";
+  const done = how => { S.settings.lastBackup = todayISO; save(); render(); toast(how); };
+  try{
+    const file = new File([txt], name, {type:"application/json"});
+    const touch = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+    if(touch && navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:"Order Book backup"});
+      return done("Backup saved");
+    }
+  }catch(e){ if(e && e.name==="AbortError") return; }
+  if(!IN_FRAME){
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([txt],{type:"application/json"})); a.download = name;
+    document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    return done("Backup file downloaded");
+  }
+  const bk = document.getElementById("bk");
+  if(bk){ bk.value = JSON.stringify(S); bk.hidden = false; }
+  try{ await navigator.clipboard.writeText(JSON.stringify(S)); done("Backup copied as text"); }
+  catch(e){ if(bk){ bk.select(); } toast("Select the text below and copy it"); }
+}
+function importText(text){
+  S = normalize(JSON.parse(text)); save(); closeSheet(); render(); toast("Backup restored");
+}
+function load(){
+  try{
+    const r = localStorage.getItem(KEY);
+    if(r){ try{ return normalize(JSON.parse(r)); }catch(e){} }
+    localStorage.setItem(KEY+":probe","1"); localStorage.removeItem(KEY+":probe");
+  }catch(e){ storageOK = false; }
+  return seed();
+}
+let S = load();
+if(storageOK) save(); // persist migrations / first-run sample
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); storageOK = true; }catch(e){ storageOK = false; } }
+const emptyState = () => ({v:VERSION, sample:false, settings:{...S.settings}, orders:[], tx:[]});
+
+const byId = id => S.orders.find(o=>o.id===id);
+/* all figures of an order in the order's own currency */
+function fin(o){
+  let paid=0,cost=0,mixed=false;
+  for(const t of S.tx){ if(t.orderId!==o.id) continue; if(t.currency!==o.currency) mixed=true;
+    const v = conv(t.amount,t.currency,o.currency); if(t.kind==="in") paid+=v; else cost+=v; }
+  paid = roundC(paid,o.currency); cost = roundC(cost,o.currency);
+  const billable = o.status==="confirmed"||o.status==="done";
+  const rest = Math.max(0, roundC((o.price||0)-paid, o.currency));
+  return {paid, cost, rest, open: billable?rest:0, mixed};
+}
+function payPill(o,f){
+  if(o.status==="inquiry"||o.status==="cancelled") return "";
+  if(o.price>0 && f.rest===0) return '<span class="pill p-good">Paid</span>';
+  if(f.paid>0) return '<span class="pill p-warn">'+fmt(f.open,o.currency)+' due</span>';
+  return '<span class="pill p-bad">Unpaid</span>';
+}
+const statusPill = s => '<span class="pill p-'+s+'">'+STATUS[s]+'</span>';
+
+/* ---------- ui state ---------- */
+const now = new Date();
+const U = {tab:"home", month:[now.getFullYear(),now.getMonth()], cal:[now.getFullYear(),now.getMonth()], day:todayISO, filter:"upcoming", q:"", finMonth:[now.getFullYear(),now.getMonth()]};
+try{ const t = localStorage.getItem(KEY+":tab"); if(["home","orders","cal","fin"].includes(t)) U.tab=t; }catch(e){}
+const mKey = ([y,m]) => y+"-"+pad(m+1);
+const shiftM = (a,d) => { const x=new Date(a[0],a[1]+d,1); return [x.getFullYear(),x.getMonth()]; };
+function daysUntil(s){ return Math.round((toDate(s)-toDate(todayISO))/86400000); }
+const inDays = d => d===0?"today":d===1?"tomorrow":d===-1?"yesterday":d>0?"in "+d+" days":Math.abs(d)+" days ago";
+
+function monthBar(which){
+  const a = U[which];
+  return '<div class="monthbar"><button data-act="mprev" data-w="'+which+'" aria-label="Previous month">‹</button><strong>'+MONTHS[a[1]]+' '+a[0]+'</strong><button data-act="mnext" data-w="'+which+'" aria-label="Next month">›</button></div>';
+}
+function orderRow(o){
+  const d = toDate(o.date), f = fin(o);
+  return '<button class="row" data-act="open" data-id="'+o.id+'">'+
+    '<div class="datebox"><span class="d num">'+d.getDate()+'</span><span class="m">'+MSHORT[d.getMonth()]+'</span></div>'+
+    '<div class="main"><span class="t">'+esc(o.title)+'</span><span class="s">'+esc(o.customer||"–")+(o.guests?' · '+esc(o.guests)+' guests':'')+'</span></div>'+
+    '<div class="end"><span class="amt num">'+fmt(o.price||0,o.currency)+'</span>'+(o.status==="inquiry"||o.status==="cancelled"?statusPill(o.status):payPill(o,f))+'</div></button>';
+}
+function monthTotals(key){
+  let inc=0,out=0;
+  for(const t of S.tx){ if(ym(t.date)!==key) continue; const v=conv(t.amount,t.currency,main()); if(t.kind==="in") inc+=v; else out+=v; }
+  inc=roundC(inc,main()); out=roundC(out,main());
+  return {inc,out,profit:roundC(inc-out,main())};
+}
+const K = v => { const t = M(v); return t.includes("IQD\u00a0") ? '<span class="cc">IQD</span> '+t.replace("IQD\u00a0","") : t; };
+function kpis(tt){
+  return '<div class="kpis">'+
+    '<div class="kpi"><span class="label">Income</span><b class="num">'+K(tt.inc)+'</b></div>'+
+    '<div class="kpi"><span class="label">Expenses</span><b class="num">'+K(tt.out)+'</b></div>'+
+    '<div class="kpi profit'+(tt.profit<0?' neg':'')+'"><span class="label">Profit this month</span><b class="num">'+K(tt.profit)+'</b></div></div>';
+}
+function mixedNote(){
+  const other = main()==="USD"?"IQD":"USD";
+  if(!S.orders.some(o=>o.currency===other) && !S.tx.some(t=>t.currency===other)) return "";
+  return '<p class="hint">Totals in '+(main()==="USD"?"US dollars":"Iraqi dinar")+' · IQD converted at $1 = IQD '+NF.IQD.format(S.settings.rate)+' <button class="copy" data-act="data">Change</button></p>';
+}
+
+/* ---------- views ---------- */
+function vHome(){
+  const tt = monthTotals(mKey(U.month));
+  const openOrders = S.orders.filter(o=>fin(o).open>0).sort((a,b)=>a.date.localeCompare(b.date));
+  const openSum = openOrders.reduce((s,o)=>s+conv(fin(o).open,o.currency,main()),0);
+  const upcoming = S.orders.filter(o=>o.date>=todayISO && o.status!=="cancelled").sort((a,b)=>a.date.localeCompare(b.date)).slice(0,4);
+  const reqs = S.orders.filter(o=>o.status==="inquiry").length;
+  let h = "";
+  if(!storageOK) h += '<div class="banner" style="background:var(--bad-soft)"><span>This browser does not allow saving (for example private mode). Your entries will not be kept.</span></div>';
+  if(S.sample) h += '<div class="banner"><span>This is sample data to try things out.</span><button data-act="clearsample">Clear &amp; start</button></div>';
+  if(backupDue()) h += '<div class="banner" id="backup-banner"><span>'+(S.settings.lastBackup?'Last backup '+Math.abs(daysUntil(S.settings.lastBackup))+' days ago.':'No backup yet.')+' Your orders live only on this phone.</span><button data-act="backup">Save backup</button></div>';
+  h += '<section>'+monthBar("month")+kpis(tt)+mixedNote()+'</section>';
+  h += '<section><h2>Payments due <small>'+plural(openOrders.length,"order")+'</small></h2><div class="list">';
+  if(openOrders.length){
+    h += '<div class="openbox"><span class="label" style="color:var(--bad)">Still to collect</span><b class="num">'+M(openSum)+'</b></div>';
+    for(const o of openOrders){ const f=fin(o);
+      h += '<button class="row" data-act="open" data-id="'+o.id+'"><div class="main"><span class="t">'+esc(o.title)+'</span><span class="s">'+fmtShort(o.date)+' · paid '+fmt(f.paid,o.currency)+' of '+fmt(o.price,o.currency)+'</span></div><div class="end"><span class="amt num neg-t">'+fmt(f.open,o.currency)+'</span></div></button>';
+    }
+  } else h += '<div class="empty">Everything is paid.</div>';
+  h += '</div></section>';
+  h += '<section><h2>Coming up <small>'+(reqs?plural(reqs,"inquiry").replace("inquirys","inquiries"):'')+'</small></h2><div class="list">';
+  if(upcoming.length){
+    for(const o of upcoming){ const dd = toDate(o.date);
+      h += '<button class="row" data-act="open" data-id="'+o.id+'"><div class="datebox"><span class="d num">'+dd.getDate()+'</span><span class="m">'+MSHORT[dd.getMonth()]+'</span></div><div class="main"><span class="t">'+esc(o.title)+'</span><span class="s">'+inDays(daysUntil(o.date))+(o.guests?' · '+esc(o.guests)+' guests':'')+(o.location?' · '+esc(o.location):'')+'</span></div><div class="end">'+statusPill(o.status)+'</div></button>';
+    }
+  } else h += '<div class="empty">No upcoming events.</div>';
+  h += '</div></section>';
+  return h;
+}
+
+function vOrders(){
+  const q = U.q.trim().toLowerCase();
+  let list = S.orders.slice();
+  if(U.filter==="upcoming") list = list.filter(o=>o.date>=todayISO && o.status!=="cancelled");
+  else if(U.filter==="inquiry") list = list.filter(o=>o.status==="inquiry");
+  else if(U.filter==="due") list = list.filter(o=>fin(o).open>0);
+  else if(U.filter==="done") list = list.filter(o=>o.status==="done");
+  if(q) list = list.filter(o=>[o.title,o.customer,o.location,o.type,o.notes].join(" ").toLowerCase().includes(q));
+  const desc = U.filter==="done"||U.filter==="all";
+  list.sort((a,b)=> desc ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date));
+  const chip = (k,l)=>'<button class="chip" data-act="filter" data-f="'+k+'" aria-pressed="'+(U.filter===k)+'">'+l+'</button>';
+  let h = '<section><input class="search" id="q" type="search" placeholder="Search name, place, occasion …" value="'+esc(U.q)+'">'+
+    '<div class="chips">'+chip("upcoming","Upcoming")+chip("inquiry","Inquiries")+chip("due","Payment due")+chip("done","Done")+chip("all","All")+'</div></section>';
+  if(!list.length) return h+'<div class="list"><div class="empty">No orders in this view.</div></div>';
+  let cur="", buf="";
+  const flush=()=>{ if(buf){ h+='<section class="grouphead"><span class="label">'+cur+'</span><div class="list">'+buf+'</div></section>'; buf=""; } };
+  for(const o of list){ const d=toDate(o.date); const g=MONTHS[d.getMonth()]+" "+d.getFullYear(); if(g!==cur){ flush(); cur=g; } buf+=orderRow(o); }
+  flush();
+  return h;
+}
+
+function vCal(){
+  const [y,m] = U.cal;
+  const first = new Date(y,m,1);
+  const start = new Date(y,m,1-((first.getDay()+1)%7)); // Saturday first
+  let h = '<section>'+monthBar("cal")+'<div class="cal">';
+  for(const w of WEEK) h+='<div class="wd">'+w+'</div>';
+  const cells = Math.ceil((((first.getDay()+1)%7) + new Date(y,m+1,0).getDate())/7)*7;
+  for(let i=0;i<cells;i++){
+    const d = new Date(start); d.setDate(start.getDate()+i);
+    const s = iso(d);
+    const evs = S.orders.filter(o=>o.date===s);
+    h += '<button class="day'+(d.getMonth()!==m?' out':'')+(s===todayISO?' today':'')+'" data-act="day" data-d="'+s+'" aria-selected="'+(s===U.day)+'" aria-label="'+fmtLong(s)+(evs.length?', '+plural(evs.length,"event"):'')+'"><span>'+d.getDate()+'</span><span class="dots">'+evs.slice(0,3).map(o=>'<i class="dot '+o.status+'"></i>').join("")+'</span></button>';
+  }
+  h += '</div><div class="legend"><span><i class="dot inquiry"></i>Inquiry</span><span><i class="dot confirmed"></i>Confirmed</span><span><i class="dot done"></i>Done</span></div></section>';
+  const evs = S.orders.filter(o=>o.date===U.day);
+  h += '<section><h2>'+fmtLong(U.day)+'</h2><div class="list">'+(evs.length?evs.map(orderRow).join(""):'<div class="empty">Free. <button class="copy" data-act="newOrderDay">Add an order on this day</button></div>')+'</div></section>';
+  const monthOrders = S.orders.filter(o=>ym(o.date)===mKey(U.cal)).sort((a,b)=>a.date.localeCompare(b.date));
+  h += '<section><h2>All events in '+MONTHS[m]+' <small>'+monthOrders.length+'</small></h2><div class="list">'+(monthOrders.length?monthOrders.map(orderRow).join(""):'<div class="empty">No events.</div>')+'</div></section>';
+  return h;
+}
+
+function vFin(){
+  const key = mKey(U.finMonth);
+  const tt = monthTotals(key);
+  let h = '<section>'+monthBar("finMonth")+kpis(tt)+mixedNote()+'</section>';
+  const months=[]; for(let i=5;i>=0;i--){ const a=shiftM(U.finMonth,-i); months.push({a,t:monthTotals(mKey(a))}); }
+  const max = Math.max(1,...months.map(x=>Math.max(x.t.inc,x.t.out)));
+  const W=340,H=150,top=14,base=118,colW=W/6,bw=16;
+  let svg='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Income and expenses, last 6 months">';
+  for(const f of [0.5,1]){ const yy=base-(base-top)*f; svg+='<line x1="0" x2="'+W+'" y1="'+yy+'" y2="'+yy+'" stroke="var(--line)" stroke-dasharray="3 4"/>'; }
+  svg+='<text x="2" y="'+(top-3)+'" font-size="10" fill="var(--muted)">'+esc(M(max))+'</text>';
+  months.forEach((x,i)=>{
+    const cx=colW*i+colW/2, hi=(base-top)*x.t.inc/max, ho=(base-top)*x.t.out/max, cur=i===5;
+    svg+='<rect x="'+(cx-bw-1)+'" y="'+(base-hi)+'" width="'+bw+'" height="'+hi+'" rx="3" fill="var(--accent)" opacity="'+(cur?1:.55)+'"/>';
+    svg+='<rect x="'+(cx+1)+'" y="'+(base-ho)+'" width="'+bw+'" height="'+ho+'" rx="3" fill="var(--saffron)" opacity="'+(cur?1:.55)+'"/>';
+    svg+='<text x="'+cx+'" y="'+(base+15)+'" font-size="11" text-anchor="middle" fill="'+(cur?'var(--ink)':'var(--muted)')+'" font-weight="'+(cur?700:500)+'">'+MSHORT[x.a[1]]+'</text>';
+    if(x.t.inc||x.t.out) svg+='<text x="'+cx+'" y="'+(base+29)+'" font-size="9.5" text-anchor="middle" fill="'+(x.t.profit<0?'var(--bad)':'var(--good)')+'">'+esc(fmtCompact(x.t.profit,main()))+'</text>';
+  });
+  svg+='<line x1="0" x2="'+W+'" y1="'+base+'" y2="'+base+'" stroke="var(--line)"/></svg>';
+  h += '<section><h2>Last 6 months <small><span style="color:var(--accent)">■</span> Income <span style="color:var(--saffron)">■</span> Expenses</small></h2><div class="chartbox">'+svg+'</div></section>';
+  const cats={}; for(const t of S.tx){ if(t.kind!=="out"||ym(t.date)!==key) continue; cats[t.category]=(cats[t.category]||0)+conv(t.amount,t.currency,main()); }
+  const ce=Object.entries(cats).sort((a,b)=>b[1]-a[1]); const cmax=Math.max(1,...ce.map(c=>c[1]));
+  h += '<section><h2>Expenses by category</h2><div class="bars">'+(ce.length?ce.map(([c,v])=>'<div class="bar"><span>'+esc(c)+'</span><div class="track"><div class="fill" style="width:'+(v/cmax*100).toFixed(1)+'%"></div></div><span class="num">'+M(v)+'</span></div>').join(""):'<div class="empty">No expenses this month.</div>')+'</div></section>';
+  const mo = S.orders.filter(o=>ym(o.date)===key && (o.status==="confirmed"||o.status==="done")).sort((a,b)=>a.date.localeCompare(b.date));
+  if(mo.length){
+    h += '<section><h2>Profit per order <small>price − costs</small></h2><div class="list">';
+    for(const o of mo){ const f=fin(o), p=roundC(o.price-f.cost,o.currency);
+      h += '<button class="row" data-act="open" data-id="'+o.id+'"><div class="main"><span class="t">'+esc(o.title)+'</span><span class="s">Price '+fmt(o.price,o.currency)+' · costs '+fmt(f.cost,o.currency)+'</span></div><div class="end"><span class="amt num '+(p<0?'neg-t':'pos')+'">'+fmt(p,o.currency)+'</span><span class="s muted" style="font-size:12px">'+(f.cost&&o.price?Math.round(p/o.price*100)+'% margin':'no costs yet')+'</span></div></button>';
+    }
+    h += '</div></section>';
+  }
+  const tx = S.tx.filter(t=>ym(t.date)===key).sort((a,b)=>b.date.localeCompare(a.date));
+  h += '<section><h2>Entries <small>'+tx.length+'</small></h2><div class="list">'+(tx.length?tx.map(txRow).join(""):'<div class="empty">No entries this month.</div>')+'</div></section>';
+  return h;
+}
+function txRow(t){
+  const o = t.orderId? byId(t.orderId):null;
+  return '<button class="row" data-act="edittx" data-id="'+t.id+'"><div class="main"><span class="t">'+esc(t.category)+(t.note?' <span class="muted" style="font-weight:400">· '+esc(t.note)+'</span>':'')+'</span><span class="s">'+fmtShort(t.date)+' · '+(o?esc(o.title):'General')+'</span></div><div class="end"><span class="amt num '+(t.kind==="in"?'pos':'')+'">'+(t.kind==="in"?'+':'−')+fmt(t.amount,t.currency)+'</span></div></button>';
+}
+
+/* ---------- render ---------- */
+const view = document.getElementById("view");
+function render(){
+  document.getElementById("apptitle").textContent = {home:"Order Book",orders:"Orders",cal:"Calendar",fin:"Money"}[U.tab];
+  view.innerHTML = ({home:vHome,orders:vOrders,cal:vCal,fin:vFin}[U.tab])();
+  document.querySelectorAll("#tabs button").forEach(b=>{ if(b.dataset.tab===U.tab) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
+  const q = document.getElementById("q");
+  if(q) q.addEventListener("input",()=>{ U.q=q.value; const pos=q.selectionStart; render(); const n=document.getElementById("q"); n.focus(); try{n.setSelectionRange(pos,pos);}catch(e){} });
+}
+function toast(msg){
+  document.querySelectorAll(".toast").forEach(x=>x.remove());
+  const t=document.createElement("div"); t.className="toast"; t.setAttribute("role","status"); t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),1800);
+}
+
+/* ---------- sheets ---------- */
+const root = document.getElementById("sheet-root");
+function openSheet(title, body, after){
+  root.innerHTML = '<div class="scrim" data-act="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="'+esc(title)+'"><div class="grab"></div><div class="sheethead"><h3>'+esc(title)+'</h3><button class="close" data-act="close" aria-label="Close">×</button></div>'+body+'</div></div>';
+  if(after) after(root.querySelector(".sheet"));
+}
+function closeSheet(){ root.innerHTML=""; }
+const curToggle = (id,c) => '<div class="cur" id="'+id+'" role="group" aria-label="Currency"><button type="button" data-c="USD" aria-pressed="'+(c==="USD")+'">$</button><button type="button" data-c="IQD" aria-pressed="'+(c==="IQD")+'">IQD</button></div>';
+function wireCur(sh, id, onChange){
+  const g = sh.querySelector("#"+id);
+  g.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{ g.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); onChange(b.dataset.c, true); }));
+  return c => g.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.c===c)));
+}
+
+function sheetOrder(id){
+  const o = byId(id); if(!o) return;
+  const f = fin(o), c = o.currency, F = v => fmt(v,c);
+  const price = o.price||0, rest = f.rest;
+  const g = +o.guests>0 ? +o.guests : 0;
+  const future = o.date > todayISO, dd = daysUntil(o.date);
+  const txs = S.tx.filter(t=>t.orderId===o.id).sort((a,b)=>a.date.localeCompare(b.date));
+  const sub = fmtMed(o.date)+(o.time?' · '+esc(o.time):'')+' · '+esc(o.type);
+
+  const FLOW = ["inquiry","confirmed","done"];
+  let top;
+  if(o.status==="cancelled") top = '<div class="banner" style="background:var(--bad-soft)"><span><b>Cancelled.</b> No longer counted in payments due.</span></div>';
+  else { const idx = FLOW.indexOf(o.status);
+    top = '<ol class="steps" aria-label="Progress">'+FLOW.map((st,i)=>'<li class="step'+(i<=idx?' done':'')+(i===idx?' now':'')+'"'+(i===idx?' aria-current="step"':'')+'><i></i>'+(i<idx?'✓ ':'')+STATUS[st]+'</li>').join("")+'</ol>'; }
+
+  const payBtn = (label,cat,amt,primary)=>'<button class="btn'+(primary?'':' ghost')+'" data-act="newtx" data-kind="in" data-id="'+o.id+'" data-cat="'+cat+'" data-amount="'+(amt||"")+'">'+label+'</button>';
+  const stBtn = (label,st,primary)=>'<button class="btn'+(primary?'':' ghost')+'" data-act="setstatus" data-id="'+o.id+'" data-s="'+st+'">'+label+'</button>';
+  let nt, nx, nb="";
+  if(o.status==="inquiry"){
+    nt="Waiting for the customer";
+    nx="Has the customer said yes? Then confirm. From then on the order counts in payments due.";
+    nb=stBtn("Customer said yes","confirmed",true)+stBtn("Customer said no","cancelled",false);
+  } else if(o.status==="confirmed" && future){
+    if(f.paid===0 && price>0){ nt="Deposit not received"; nx="Event "+inDays(dd)+". Record the deposit as soon as it arrives."; nb=payBtn("Record deposit","Deposit","",true); }
+    else if(rest>0){ nt="Event "+inDays(dd); nx="Deposit received. Still due: <b>"+F(rest)+"</b>."; nb=payBtn("Record payment","Final payment",rest,true); }
+    else { nt="Event "+inDays(dd); nx="Fully paid. Mark as done after the event."; nb=stBtn("Event is done","done",false); }
+  } else if(o.status==="confirmed"){
+    nt = dd===0?"Event is today":"Event was on "+fmtShort(o.date);
+    nx = "When everything went well, mark it as done."+(rest>0?" Still due: <b>"+F(rest)+"</b>.":"");
+    nb = stBtn("Event is done","done",true)+(rest>0?payBtn("Record payment","Final payment",rest,false):"");
+  } else if(o.status==="done"){
+    if(rest>0){ nt="Final payment due"; nx="The customer still owes <b>"+F(rest)+"</b>."; nb=payBtn("Record final payment","Final payment",rest,true); }
+    else { nt="Completed"; nx="Event done and fully paid."; }
+  } else { nt="Cancelled"; nx="If the customer books after all, reopen the order."; nb=stBtn("Reopen order","inquiry",false); }
+  const next = '<section class="next'+(o.status==="done"&&rest===0?' ok':'')+'"><span class="label">Next step</span><h3>'+nt+'</h3><p>'+nx+'</p>'+(nb?'<div class="acts">'+nb+'</div>':'')+'</section>';
+
+  let pay;
+  if(price<=0) pay = '<div class="card"><p class="muted" style="margin:0">No price agreed yet. <button class="copy" data-act="editorder" data-id="'+o.id+'">Add price</button></p></div>';
+  else { const pct = Math.min(100, f.paid/price*100);
+    pay = '<div class="card"><div class="payhead"><span><b class="num">'+F(f.paid)+'</b> <span class="muted">of '+F(price)+' paid</span></span><span class="num '+(rest>0?'neg-t':'pos')+'" style="font-weight:700">'+(rest>0?F(rest)+' due':'✓ fully paid')+'</span></div>'+
+      '<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+Math.round(pct)+'"><i style="width:'+pct.toFixed(1)+'%"></i></div>'+
+      (o.status==="inquiry"?'<p class="hint">Quoted price. Becomes binding once the customer says yes.</p>':'')+'</div>'; }
+
+  const profit = roundC(price - f.cost, c);
+  const kg = '<dl class="kv num"><dt>Price</dt><dd>'+F(price)+'</dd><dt>Expenses</dt><dd>'+(f.cost?'− '+F(f.cost):F(0))+'</dd><div class="sep"></div>'+
+    '<dt><b style="color:var(--ink)">Profit</b></dt><dd class="'+(profit<0?'neg-t':'pos')+'">'+F(profit)+(price&&f.cost?' <span class="muted" style="font-weight:500">· '+Math.round(profit/price*100)+'% margin</span>':'')+'</dd>'+
+    (g&&price?'<dt>Price per guest</dt><dd>'+F(price/g)+'</dd>':'')+(g&&f.cost?'<dt>Cost per guest</dt><dd>'+F(f.cost/g)+'</dd>':'')+'</dl>'+
+    (f.mixed?'<p class="hint">Entries in the other currency are converted at $1 = IQD '+NF.IQD.format(S.settings.rate)+'.</p>':'')+
+    (f.cost?'':'<p class="hint">No expenses recorded yet. Add food, staff etc. under Entries below to see the real profit.</p>');
+
+  const det = '<dl class="kv"><dt>Customer</dt><dd>'+esc(o.customer||"–")+'</dd>'+
+    (o.phone?'<dt>Phone</dt><dd><span class="num">'+esc(o.phone)+'</span><button class="copy" data-act="copy" data-v="'+esc(o.phone)+'">Copy</button></dd>':'')+
+    (o.location?'<dt>Place</dt><dd>'+esc(o.location)+'</dd>':'')+(g?'<dt>Guests</dt><dd class="num">'+g+'</dd>':'')+
+    (o.notes?'<dt style="grid-column:1/-1">Notes</dt><dd style="font-weight:500;text-align:left;grid-column:1/-1">'+esc(o.notes)+'</dd>':'')+'</dl>';
+
+  const body = '<p class="sub">'+sub+'</p>'+top+next+
+    '<section><h2>Payment</h2>'+pay+'</section>'+
+    '<section><h2>Details</h2>'+det+'</section>'+
+    '<section><h2>Costs &amp; profit</h2>'+kg+'</section>'+
+    '<section><h2>Entries <small>'+txs.length+'</small></h2><div class="list">'+(txs.length?txs.map(txRow).join(""):'<div class="empty">No payments or expenses yet.</div>')+'</div>'+
+    '<div class="btnrow"><button class="btn ghost" data-act="newtx" data-kind="in" data-id="'+o.id+'">+ Payment</button><button class="btn ghost" data-act="newtx" data-kind="out" data-id="'+o.id+'">+ Expense</button></div></section>'+
+    '<div class="btnrow"><button class="btn ghost" data-act="editorder" data-id="'+o.id+'">Edit</button><button class="btn danger" data-act="delorder" data-id="'+o.id+'">Delete order</button></div>';
+  openSheet(o.title, body);
+}
+
+function sheetOrderForm(id, presetDate){
+  const o = id? byId(id) : {title:"",type:"",date:presetDate||todayISO,time:"",customer:"",phone:"",location:"",guests:"",price:"",currency:main(),status:"inquiry",notes:""};
+  let c = o.currency;
+  const opt = (arr,v)=>arr.map(x=>'<option'+(x===v?' selected':'')+'>'+esc(x)+'</option>').join("");
+  const body = '<form id="f-order" novalidate>'+
+    '<div class="field"><label for="of-title">Name of the order</label><input id="of-title" required placeholder="e.g. Wedding Ahmed & Zainab" value="'+esc(o.title)+'"></div>'+
+    '<div class="two"><div class="field"><label for="of-type">Occasion</label><select id="of-type" required><option value="" disabled'+(o.type?'':' selected')+'>Choose</option>'+opt(TYPES,o.type)+'</select></div>'+
+    '<div class="field"><label for="of-status">Status</label><select id="of-status">'+Object.entries(STATUS).map(([k,l])=>'<option value="'+k+'"'+(o.status===k?' selected':'')+'>'+l+'</option>').join("")+'</select></div></div>'+
+    '<div class="two"><div class="field"><label for="of-date">Date</label><input id="of-date" type="date" required value="'+esc(o.date)+'"></div>'+
+    '<div class="field"><label for="of-time">Time</label><input id="of-time" type="time" value="'+esc(o.time)+'"></div></div>'+
+    '<div class="field"><label for="of-customer">Customer / contact</label><input id="of-customer" value="'+esc(o.customer)+'"></div>'+
+    '<div class="two"><div class="field"><label for="of-phone">Phone</label><input id="of-phone" type="tel" value="'+esc(o.phone)+'"></div>'+
+    '<div class="field"><label for="of-guests">Guests</label><input id="of-guests" type="text" inputmode="numeric" value="'+esc(o.guests)+'"></div></div>'+
+    '<div class="field"><label for="of-location">Place</label><input id="of-location" value="'+esc(o.location)+'"></div>'+
+    '<div class="field"><label for="of-price">Agreed price</label><div class="pricerow"><input id="of-price" type="text" inputmode="decimal" autocomplete="off" value="'+esc(fmtInput(o.price,c))+'">'+curToggle("of-cur",c)+'</div><p class="hint" id="of-conv"></p></div>'+
+    '<div class="field"><label for="of-notes">Notes (menu, allergies, agreements)</label><textarea id="of-notes">'+esc(o.notes)+'</textarea></div>'+
+    '<p class="err" id="of-err" hidden></p>'+
+    '<button class="btn" type="submit">'+(id?'Save changes':'Create order')+'</button></form>';
+  openSheet(id?"Edit order":"New order", body, sh=>{
+    const price = sh.querySelector("#of-price"), convEl = sh.querySelector("#of-conv");
+    const upd = () => { price.placeholder = c==="IQD" ? "e.g. 2,500,000" : "e.g. 2,450"; const v=parseAmount(price.value,c); const other=c==="USD"?"IQD":"USD";
+      convEl.textContent = v>0 ? "≈ "+fmt(conv(v,c,other),other)+" at $1 = IQD "+NF.IQD.format(S.settings.rate) : ""; };
+    wireCur(sh,"of-cur",nc=>{ c=nc; upd(); });
+    price.addEventListener("input",upd); upd();
+    sh.querySelector("#f-order").addEventListener("submit",e=>{
+      e.preventDefault();
+      const v = k=>sh.querySelector("#of-"+k).value;
+      const err = sh.querySelector("#of-err");
+      const fail = m => { err.textContent=m; err.hidden=false; };
+      if(!v("title").trim()) return fail("Please give the order a name.");
+      if(!v("type")) return fail("Please choose the occasion.");
+      if(!isDate(v("date"))) return fail("Please choose a date.");
+      const p = v("price").trim()==="" ? 0 : parseAmount(v("price"),c);
+      if(isNaN(p)) return fail("The price is not a valid number. Example: "+(c==="IQD"?"2,500,000":"2,450"));
+      const guests = v("guests").trim();
+      if(guests && !/^\d+$/.test(parseAmount(guests,"IQD")+"")) return fail("Guests must be a whole number.");
+      const data = {title:v("title").trim(),type:v("type"),status:v("status"),date:v("date"),time:v("time"),customer:v("customer").trim(),phone:v("phone").trim(),guests:guests?String(parseAmount(guests,"IQD")):"",location:v("location").trim(),price:p,currency:c,notes:v("notes").trim()};
+      if(id){ Object.assign(o,data); } else { data.id=uid(); S.orders.push(data); id=data.id; }
+      save(); render(); sheetOrder(id); toast("Saved");
+    });
+  });
+}
+
+function sheetTxForm(txId, kind, orderId, preset){
+  preset = preset||{};
+  const ord0 = orderId ? byId(orderId) : null;
+  const t = txId? S.tx.find(x=>x.id===txId) : {kind:kind||"out",category:preset.cat||"",amount:preset.amount||"",currency:ord0?ord0.currency:main(),date:todayISO,orderId:orderId||null,note:""};
+  let k = t.kind, c = t.currency, curTouched = !!txId;
+  const orders = S.orders.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  const catOpts = kk=>(kk==="in"?CAT_IN:CAT_OUT).map(x=>'<option'+(x===t.category?' selected':'')+'>'+esc(x)+'</option>').join("");
+  const body = '<form id="f-tx" novalidate>'+
+    '<div class="seg"><button type="button" data-k="in" aria-pressed="'+(k==="in")+'">Money in</button><button type="button" data-k="out" aria-pressed="'+(k==="out")+'">Money out</button></div>'+
+    '<div class="field"><label for="tf-amount">Amount</label><div class="pricerow"><input id="tf-amount" type="text" inputmode="decimal" autocomplete="off" value="'+esc(fmtInput(t.amount,c))+'">'+curToggle("tf-cur",c)+'</div><p class="hint" id="tf-conv"></p></div>'+
+    '<div class="two"><div class="field"><label for="tf-date">Date</label><input id="tf-date" type="date" required value="'+esc(t.date)+'"></div>'+
+    '<div class="field"><label for="tf-cat">Category</label><select id="tf-cat">'+catOpts(k)+'</select></div></div>'+
+    '<div class="field"><label for="tf-order">Belongs to order</label><select id="tf-order"><option value="">No order (general)</option>'+orders.map(o=>'<option value="'+o.id+'"'+(o.id===t.orderId?' selected':'')+'>'+esc(o.title)+' · '+fmtShort(o.date)+'</option>').join("")+'</select></div>'+
+    '<div class="field"><label for="tf-note">Note</label><input id="tf-note" placeholder="e.g. Jameela market, 3 helpers" value="'+esc(t.note)+'"></div>'+
+    '<p class="err" id="tf-err" hidden></p>'+
+    '<button class="btn" type="submit">'+(txId?'Save':'Save entry')+'</button>'+
+    (txId?'<button class="btn danger" type="button" data-act="deltx" data-id="'+txId+'">Delete entry</button>':'')+'</form>';
+  openSheet(txId?"Edit entry":(k==="in"?"Record payment":"Record expense"), body, sh=>{
+    const amt = sh.querySelector("#tf-amount"), convEl = sh.querySelector("#tf-conv"), ordSel = sh.querySelector("#tf-order");
+    const upd = () => {
+      amt.placeholder = c==="IQD" ? "e.g. 650,000" : "e.g. 450";
+      const v = parseAmount(amt.value,c), o = byId(ordSel.value), target = o ? o.currency : main();
+      convEl.textContent = v>0 && target!==c ? "≈ "+fmt(conv(v,c,target),target)+(o?" on this order":"")+" at $1 = IQD "+NF.IQD.format(S.settings.rate) : "";
+    };
+    const setCur = wireCur(sh,"tf-cur",nc=>{ c=nc; curTouched=true; upd(); });
+    ordSel.addEventListener("change",()=>{ const o=byId(ordSel.value); if(!curTouched){ c = o?o.currency:main(); setCur(c); } upd(); });
+    amt.addEventListener("input",upd); upd();
+    sh.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>{
+      k=b.dataset.k; sh.querySelectorAll(".seg button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+      sh.querySelector("#tf-cat").innerHTML=catOpts(k);
+      if(!txId) sh.querySelector("h3").textContent = k==="in"?"Record payment":"Record expense";
+    }));
+    sh.querySelector("#f-tx").addEventListener("submit",e=>{
+      e.preventDefault();
+      const v = x=>sh.querySelector("#tf-"+x).value;
+      const err = sh.querySelector("#tf-err");
+      const amount = parseAmount(v("amount"),c);
+      if(!(amount>0)){ err.textContent="Please enter an amount above 0. Example: "+(c==="IQD"?"650,000":"450"); err.hidden=false; return; }
+      if(!isDate(v("date"))){ err.textContent="Please choose a date."; err.hidden=false; return; }
+      const data = {kind:k,amount,currency:c,date:v("date"),category:v("cat"),orderId:v("order")||null,note:v("note").trim()};
+      if(txId) Object.assign(t,data); else { data.id=uid(); S.tx.push(data); }
+      save(); render();
+      if(data.orderId) sheetOrder(data.orderId); else closeSheet();
+      toast(data.kind==="in"?"Payment saved":"Expense saved");
+    });
+  });
+}
+
+function sheetPlus(){
+  openSheet("Add new",'<div class="menu">'+
+    '<button class="btn" data-act="newOrder">New order <span>inquiry or booking</span></button>'+
+    '<button class="btn ghost" data-act="newtx" data-kind="in">Payment received <span>deposit, final payment</span></button>'+
+    '<button class="btn ghost" data-act="newtx" data-kind="out">Expense <span>food, staff, rental</span></button></div>');
+}
+
+function sheetData(){
+  const m = main();
+  openSheet("Settings",
+    '<section><h2>Currency</h2>'+
+    '<div class="field"><label>Show totals in</label><div class="seg" id="set-main"><button type="button" data-c="USD" aria-pressed="'+(m==="USD")+'">US dollar ($)</button><button type="button" data-c="IQD" aria-pressed="'+(m==="IQD")+'">Iraqi dinar (IQD)</button></div></div>'+
+    '<div class="field"><label for="set-rate">Exchange rate</label><div class="rate"><span>$1 =</span><span>IQD</span><input id="set-rate" type="text" inputmode="numeric" value="'+NF.IQD.format(S.settings.rate)+'"><button class="btn ghost" data-act="saverate" style="padding:10px 14px">Save</button></div>'+
+    '<p class="hint">Each order and entry keeps its own currency. This rate is only used to add dollars and dinars together in totals. Update it when the market rate changes.</p></div></section>'+
+    '<section><h2>Backup</h2>'+
+    '<p class="muted" style="margin:0">Everything is saved only on this device. Save a backup regularly, for example to Files, iCloud Drive or WhatsApp. '+(S.settings.lastBackup?'Last backup: '+fmtShort(S.settings.lastBackup)+'.':'No backup yet.')+'</p>'+
+    '<button class="btn ghost" data-act="backup">Save backup</button>'+
+    '<textarea id="bk" readonly hidden style="min-height:90px;border:1px solid var(--line);border-radius:11px;padding:10px;background:var(--surface)"></textarea>'+
+    '<div class="field"><label for="impfile">Restore from a backup file</label><input id="impfile" type="file" accept=".json,application/json,text/plain" style="font-size:14px"></div>'+
+    '<div class="field"><label for="imp">Or paste backup text</label><textarea id="imp" placeholder="Paste backup text here …"></textarea></div>'+
+    '<button class="btn ghost" data-act="import">Restore from text</button></section>'+
+    '<section><h2>Data</h2><button class="btn danger" data-act="reset">Delete everything</button>'+
+    '<button class="btn ghost" data-act="demo">Load sample data</button></section>',
+    sh=>{ sh.querySelector("#impfile").addEventListener("change",ev=>{ const f=ev.target.files&&ev.target.files[0]; if(!f) return;
+        f.text().then(t=>{ try{ importText(t); }catch(err){ toast("That file is not a valid backup"); } }); });
+      sh.querySelectorAll("#set-main button").forEach(b=>b.addEventListener("click",()=>{
+      S.settings.main=b.dataset.c; save(); render();
+      sh.querySelectorAll("#set-main button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+      toast("Totals now in "+(b.dataset.c==="USD"?"US dollars":"Iraqi dinar"));
+    })); });
+}
+
+/* ---------- events ---------- */
+let armed = null;
+function arm(btn, label, fn){
+  if(armed===btn){ fn(); armed=null; return; }
+  if(armed){ armed.classList.remove("armed"); armed.textContent=armed.dataset.orig; }
+  btn.dataset.orig=btn.textContent; btn.textContent=label; btn.classList.add("armed"); armed=btn;
+  setTimeout(()=>{ if(armed===btn){ btn.classList.remove("armed"); btn.textContent=btn.dataset.orig; armed=null; } },3500);
+}
+
+document.addEventListener("click",e=>{
+  const tabBtn = e.target.closest("#tabs button");
+  if(tabBtn){ U.tab=tabBtn.dataset.tab; try{localStorage.setItem(KEY+":tab",U.tab);}catch(err){} render(); window.scrollTo(0,0); return; }
+  const el = e.target.closest("[data-act]"); if(!el) return;
+  const a = el.dataset.act, id = el.dataset.id;
+  if(a==="scrim"){ if(e.target===el) closeSheet(); return; }
+  if(a==="close") return closeSheet();
+  if(a==="mprev"||a==="mnext"){ U[el.dataset.w]=shiftM(U[el.dataset.w],a==="mprev"?-1:1); if(el.dataset.w==="cal"){ const c=U.cal; U.day=c[0]+"-"+pad(c[1]+1)+"-01"; } return render(); }
+  if(a==="open") return sheetOrder(id);
+  if(a==="filter"){ U.filter=el.dataset.f; return render(); }
+  if(a==="day"){ U.day=el.dataset.d; const d=toDate(U.day); if(d.getMonth()!==U.cal[1]) U.cal=[d.getFullYear(),d.getMonth()]; return render(); }
+  if(a==="plus") return sheetPlus();
+  if(a==="newOrder") return sheetOrderForm(null, U.tab==="cal"?U.day:null);
+  if(a==="newOrderDay") return sheetOrderForm(null, U.day);
+  if(a==="editorder") return sheetOrderForm(id);
+  if(a==="newtx") return sheetTxForm(null, el.dataset.kind, id||null, {cat:el.dataset.cat||"", amount:el.dataset.amount?+el.dataset.amount:""});
+  if(a==="edittx") return sheetTxForm(id);
+  if(a==="setstatus"){ const o=byId(id); o.status=el.dataset.s; save(); render(); sheetOrder(id); return toast({confirmed:"Order confirmed",done:"Marked as done",cancelled:"Order cancelled",inquiry:"Reopened as inquiry"}[o.status]); }
+  if(a==="delorder") return arm(el,"Really delete? Tap again",()=>{ S.orders=S.orders.filter(o=>o.id!==id); S.tx=S.tx.filter(t=>t.orderId!==id); save(); closeSheet(); render(); toast("Order deleted"); });
+  if(a==="deltx") return arm(el,"Really delete? Tap again",()=>{ const t=S.tx.find(x=>x.id===id); S.tx=S.tx.filter(x=>x.id!==id); save(); render(); if(t&&t.orderId) sheetOrder(t.orderId); else closeSheet(); toast("Entry deleted"); });
+  if(a==="copy"){ const v=el.dataset.v; try{ navigator.clipboard.writeText(v).then(()=>toast("Copied"),()=>toast(v)); }catch(err){ toast(v); } return; }
+  if(a==="data") return sheetData();
+  if(a==="saverate"){ const r=parseAmount(document.getElementById("set-rate").value,"IQD"); if(!(r>0)){ toast("Enter the rate as a number, e.g. 1,590"); return; } S.settings.rate=r; save(); render(); document.getElementById("set-rate").value=NF.IQD.format(r); return toast("Rate saved: $1 = IQD "+NF.IQD.format(r)); }
+  if(a==="clearsample") return arm(el,"Sure? Tap again",()=>{ S=emptyState(); save(); render(); toast("Ready for real orders"); });
+  if(a==="reset") return arm(el,"Delete all data? Tap again",()=>{ S=emptyState(); save(); closeSheet(); render(); toast("Everything deleted"); });
+  if(a==="demo"){ const st={...S.settings}; S=seed(); S.settings=st; save(); closeSheet(); render(); return toast("Sample data loaded"); }
+  if(a==="backup"){ exportBackup(); return; }
+  if(a==="import"){ try{ importText(document.getElementById("imp").value); }catch(err){ toast("That is not a valid backup"); } return; }
+});
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeSheet(); });
+
+render();
+})();
+</script>
+<style>
+/* stand-alone app: the header runs under the status bar */
+.top{top:0;padding-top:calc(14px + env(safe-area-inset-top,0px))}
+.sheet{max-height:calc(100% - env(safe-area-inset-top,0px) - 12px)}
+.appbar{position:fixed;left:16px;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:8;box-shadow:0 6px 24px rgba(0,0,0,.18);max-width:608px;margin:0 auto}
+.appbar.info{background:var(--accent-soft)}
+</style>
+<div class="banner appbar" id="update-banner" role="status" hidden><span>A new version of the app is ready.</span><button id="update-btn">Update now</button></div>
+<div class="banner appbar info" id="install-hint" hidden><span>Install: tap <b>Share</b> <svg width="14" height="16" viewBox="0 0 14 16" aria-hidden="true" style="vertical-align:-2px"><path d="M7 1v9M3.5 4.5 7 1l3.5 3.5M2 7.5v7h10v-7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg> then <b>Add to Home Screen</b>. The app then works offline.</span><button id="install-ok">OK</button></div>
+<script>
+(function(){
+  "use strict";
+  var standalone = window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
+  var ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  try{
+    if(ios && !standalone && !localStorage.getItem("ob:install-hint")){
+      var hint = document.getElementById("install-hint"); hint.hidden = false;
+      document.getElementById("install-ok").onclick = function(){ hint.hidden = true; try{ localStorage.setItem("ob:install-hint","1"); }catch(e){} };
+    }
+  }catch(e){}
+  if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function(){});
+  if(!("serviceWorker" in navigator) || location.protocol === "file:") return;
+  var hadController = !!navigator.serviceWorker.controller, reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", function(){
+    if(!hadController || reloading) return; reloading = true; location.reload();
+  });
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("./sw.js").then(function(reg){
+      function offer(w){
+        if(!hadController || !w) return;
+        var b = document.getElementById("update-banner"); b.hidden = false;
+        document.getElementById("update-btn").onclick = function(){ w.postMessage("skipWaiting"); };
+      }
+      function track(w){ if(!w) return; if(w.state === "installed") return offer(w);
+        w.addEventListener("statechange", function(){ if(w.state === "installed") offer(w); }); }
+      if(reg.waiting) offer(reg.waiting);
+      track(reg.installing);
+      reg.addEventListener("updatefound", function(){ track(reg.installing); });
+      reg.update().catch(function(){});
+      document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "visible") reg.update().catch(function(){}); });
+    }).catch(function(){});
+  });
+})();
+</script>
+</body>
+</html>
