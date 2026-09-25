@@ -186,13 +186,15 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
 .sheethead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .sheethead h3{font-family:var(--display);font-size:21px;margin:0;text-wrap:balance}
 .close{border:0;background:var(--surface-2);border-radius:999px;width:32px;height:32px;font-size:18px;color:var(--muted);flex-shrink:0}
-form{display:flex;flex-direction:column;gap:12px}
-.field{display:flex;flex-direction:column;gap:4px}
+form{display:flex;flex-direction:column;gap:10px}
+form .btn[type=submit]{position:sticky;bottom:calc(6px + env(safe-area-inset-bottom,0px));z-index:2;box-shadow:0 -10px 14px 6px var(--bg),0 4px 14px rgba(0,0,0,.18)}
+.two.narrow-first{grid-template-columns:minmax(0,1fr) minmax(0,2.2fr)}
+.field{display:flex;flex-direction:column;gap:3px}
 .field label{font-size:13px;font-weight:600;color:var(--muted)}
-.field input,.field select,.field textarea{border:1px solid var(--line);background:var(--surface);border-radius:11px;padding:11px 12px;width:100%;font-size:16px;min-width:0;max-width:100%}
-.field input[type=date],.field input[type=time]{-webkit-appearance:none;appearance:none;display:block;min-height:48px;text-align:left}
+.field input,.field select,.field textarea{border:1px solid var(--line);background:var(--surface);border-radius:11px;padding:10px 12px;width:100%;font-size:16px;min-width:0;max-width:100%}
+.field input[type=date],.field input[type=time]{-webkit-appearance:none;appearance:none;display:block;min-height:45px;text-align:left}
 .field input::-webkit-date-and-time-value{text-align:left}
-.field textarea{min-height:70px;resize:vertical}
+.field textarea{min-height:0;height:64px;resize:vertical}
 .two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface-2);border-radius:11px;padding:3px;gap:3px}
 .seg button{border:0;background:transparent;border-radius:9px;padding:8px 4px;font-weight:600;font-size:13.5px;color:var(--muted)}
@@ -692,12 +694,12 @@ function sheetOrderForm(id, presetDate){
     '<div class="field"><label for="of-status">Status</label><select id="of-status">'+Object.entries(STATUS).map(([k,l])=>'<option value="'+k+'"'+(o.status===k?' selected':'')+'>'+l+'</option>').join("")+'</select></div></div>'+
     '<div class="two"><div class="field"><label for="of-date">Date</label><input id="of-date" type="date" required value="'+esc(o.date)+'"></div>'+
     '<div class="field"><label for="of-time">Time</label><input id="of-time" type="time" value="'+esc(o.time)+'"></div></div>'+
-    '<div class="field"><label for="of-customer">Customer / contact</label><input id="of-customer" value="'+esc(o.customer)+'"></div>'+
-    '<div class="two"><div class="field"><label for="of-phone">Phone</label><input id="of-phone" type="tel" value="'+esc(o.phone)+'"></div>'+
-    '<div class="field"><label for="of-guests">Guests</label><input id="of-guests" type="text" inputmode="numeric" value="'+esc(o.guests)+'"></div></div>'+
-    '<div class="field"><label for="of-location">Place</label><input id="of-location" value="'+esc(o.location)+'"></div>'+
+    '<div class="two"><div class="field"><label for="of-customer">Customer</label><input id="of-customer" autocomplete="off" value="'+esc(o.customer)+'"></div>'+
+    '<div class="field"><label for="of-phone">Phone</label><input id="of-phone" type="tel" value="'+esc(o.phone)+'"></div></div>'+
+    '<div class="two narrow-first"><div class="field"><label for="of-guests">Guests</label><input id="of-guests" type="text" inputmode="numeric" value="'+esc(o.guests)+'"></div>'+
+    '<div class="field"><label for="of-location">Place</label><input id="of-location" value="'+esc(o.location)+'"></div></div>'+
     '<div class="field"><label for="of-price">Agreed price</label><div class="pricerow"><input id="of-price" type="text" inputmode="decimal" autocomplete="off" value="'+esc(fmtInput(o.price,c))+'">'+curToggle("of-cur",c)+'</div><p class="hint" id="of-conv"></p></div>'+
-    '<div class="field"><label for="of-notes">Notes (menu, allergies, agreements)</label><textarea id="of-notes">'+esc(o.notes)+'</textarea></div>'+
+    '<div class="field"><label for="of-notes">Notes (menu, allergies, agreements)</label><textarea id="of-notes" rows="2">'+esc(o.notes)+'</textarea></div>'+
     '<p class="err" id="of-err" hidden></p>'+
     '<button class="btn" type="submit">'+(id?'Save changes':'Create order')+'</button></form>';
   openSheet(id?"Edit order":"New order", body, sh=>{
