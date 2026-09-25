@@ -1,8 +1,8 @@
 /* Catering Order Book — service worker. Cache-first: the app keeps working
    offline and even if the website is taken down. Orders never leave the phone. */
-const VERSION = "2e7c6a8fa3";
+const VERSION = "2f9469f494";
 const CACHE = "order-book-" + VERSION;
-const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./apple-touch-icon.png", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./fonts/figtree-400.woff2", "./fonts/figtree-500.woff2", "./fonts/figtree-600.woff2", "./fonts/figtree-700.woff2", "./fonts/bricolage-600.woff2", "./fonts/bricolage-700.woff2"];
+const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./apple-touch-icon.png", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./fonts/figtree-400.woff2", "./fonts/figtree-500.woff2", "./fonts/figtree-600.woff2", "./fonts/figtree-700.woff2", "./fonts/bodoni-500.woff2", "./fonts/bodoni-600.woff2"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.map(u => new Request(u, {cache: "reload"})))));

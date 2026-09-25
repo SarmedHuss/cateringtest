@@ -1,13 +1,13 @@
 {
-  "name": "Catering Order Book",
-  "short_name": "Order Book",
+  "name": "\u00c9lys\u00e9e Order Book",
+  "short_name": "\u00c9lys\u00e9e",
   "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#F3F5F2",
-  "theme_color": "#0E6B5A",
+  "background_color": "#F8F2E4",
+  "theme_color": "#1C2029",
   "icons": [
     {
       "src": "icon-192.png",
