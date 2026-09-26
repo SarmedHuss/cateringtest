@@ -130,6 +130,10 @@ h2 small{font-family:var(--body);font-size:var(--fs-sub);color:var(--muted);font
 .docprev{display:flex;flex-direction:column;gap:12px;min-height:120px}
 .catchips{display:flex;flex-wrap:wrap;gap:6px}
 .catchips .chip{white-space:normal;text-align:left}
+.tr{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface);display:flex;flex-direction:column;gap:8px}
+.tr summary{font-weight:600;font-size:var(--fs-sub);cursor:pointer;color:var(--ink)}
+.tr summary .muted{font-weight:400}
+.tr[open] summary{margin-bottom:4px}
 .checkrow{display:flex;align-items:center;gap:10px;font-size:var(--fs-sub);color:var(--muted)}
 .checkrow input{width:20px;height:20px;accent-color:var(--accent)}
 .fieldsuffix{display:flex;align-items:center;gap:8px}
@@ -307,8 +311,45 @@ const STATUS = {inquiry:"Inquiry", confirmed:"Confirmed", done:"Done", cancelled
 const TYPES = ["Wedding","Engagement","Birthday","Graduation","Corporate event","Condolence (Fatiha)","Religious occasion","Other"];
 const CAT_IN = ["Deposit","Final payment","Payment","Other income"];
 const CAT_OUT = ["Food","Drinks","Staff","Equipment & rental","Transport","Fixed costs","Other"];
-const UNITS = {guest:{en:"per guest",ar:"لكل ضيف"}, person:{en:"per person",ar:"لكل شخص"}, pcs:{en:"pcs",ar:"قطعة"}, flat:{en:"flat rate",ar:"مبلغ مقطوع"}};
+const UNITS = {guest:{en:"per guest",ar:"لكل ضيف",ku:"بۆ هەر میوانێک"}, person:{en:"per person",ar:"لكل شخص",ku:"بۆ هەر کەسێک"}, pcs:{en:"pcs",ar:"قطعة",ku:"دانە"}, flat:{en:"flat rate",ar:"مبلغ مقطوع",ku:"بڕی دیاریکراو"}};
 const TYPES_AR = {"Wedding":"زفاف","Engagement":"خطوبة","Birthday":"عيد ميلاد","Graduation":"حفل تخرج","Corporate event":"مناسبة شركة","Condolence (Fatiha)":"مجلس عزاء","Religious occasion":"مناسبة دينية","Other":"مناسبة"};
+const TYPES_KU = {"Wedding":"ئاهەنگی هاوسەرگیری","Engagement":"دەستگیرانی","Birthday":"ڕۆژی لەدایکبوون","Graduation":"ئاهەنگی دەرچوون","Corporate event":"بۆنەی کۆمپانیا","Condolence (Fatiha)":"پرسە","Religious occasion":"بۆنەی ئایینی","Other":"بۆنە"};
+/* second language on quotes and invoices (English is always there) */
+const DOC_LANGS = {ar:"العربية", ku:"کوردی"};
+const DOC_L = {
+  ar:{invoice:"فاتورة", quote:"عرض سعر", no:"رقم", date:"التاريخ", valid:"صالح حتى", billTo:"العميل", event:"المناسبة", guests:"عدد الضيوف", desc:"الوصف", qty:"الكمية", unit:"سعر الوحدة", amount:"المبلغ",
+      subtotal:"المجموع الفرعي", discount:"الخصم", total:"الإجمالي", paid:"المدفوع", balance:"المبلغ المستحق", thanks:"شكراً لاختياركم", cont:"تابع", catering:"خدمة ضيافة",
+      validNote:"هذا العرض صالح لمدة 14 يوماً.", conv:r=>"تم تحويل المبالغ بسعر صرف 1 دولار = "+r+" دينار.", types:TYPES_AR},
+  ku:{invoice:"فاکتۆر", quote:"پێشنیاری نرخ", no:"ژمارە", date:"بەروار", valid:"کارایە تا", billTo:"کڕیار", event:"بۆنە", guests:"ژمارەی میوان", desc:"وەسف", qty:"بڕ", unit:"نرخی یەکە", amount:"کۆی نرخ",
+      subtotal:"کۆی لاوەکی", discount:"داشکاندن", total:"کۆی گشتی", paid:"پارەی دراو", balance:"پارەی ماوە", thanks:"سوپاس بۆ هەڵبژاردنتان", cont:"بەردەوام", catering:"خزمەتگوزاری خواردن",
+      validNote:"ئەم پێشنیارە بۆ ماوەی 14 ڕۆژ کارایە.", conv:r=>"بڕەکان گۆڕدراون بە نرخی 1 دۆلار = "+r+" دینار.", types:TYPES_KU}
+};
+/* offline dictionary for common catering terms: English · Arabic · Kurdish (Sorani) */
+const GLOSSARY = [
+  ["Open buffet (lamb, chicken, rice, salads)","بوفيه مفتوح (لحم، دجاج، رز، سلطات)","بوفێی کراوە (گۆشتی مەڕ، مریشک، برنج، زەڵاتە)"],
+  ["Open buffet","بوفيه مفتوح","بوفێی کراوە"], ["Buffet","بوفيه","بوفێ"], ["Lunch buffet","بوفيه غداء","بوفێی نانی نیوەڕۆ"], ["Dinner buffet","بوفيه عشاء","بوفێی نانی ئێوارە"],
+  ["Breakfast buffet","بوفيه فطور","بوفێی نانی بەیانی"], ["Whole lamb quzi","قوزي لحم غنم كامل","قوزی مەڕی تەواو"], ["Lamb quzi","قوزي لحم غنم","قوزی مەڕ"], ["Grilled chicken","دجاج مشوي","مریشکی برژاو"],
+  ["Kebab","كباب","کەباب"], ["Chicken tikka","تكة دجاج","تیکەی مریشک"], ["Mixed grill","مشويات مشكلة","برژاوی تێکەڵ"], ["Grill station","ركن المشاوي","گۆشەی برژاندن"], ["Masgouf fish","سمك مسكوف","ماسی مەسگوف"],
+  ["Dolma","دولمة","دۆڵمە"], ["Biryani","برياني","بریانی"], ["Kubba","كبة","کوبە"], ["Rice","رز","برنج"], ["Soup","شوربة","شۆربا"], ["Salads","سلطات","زەڵاتە"], ["Salad bar","ركن السلطات","گۆشەی زەڵاتە"],
+  ["Appetizers","مقبلات","مەزە"], ["Finger food","مقبلات خفيفة","خواردنی سووک"], ["Bread","خبز","نان"], ["Samoon bread","خبز صمون","نانی سەموون"],
+  ["Dessert table","طاولة حلويات","مێزی شیرینی"], ["Dessert and sweets table","طاولة حلويات","مێزی شیرینی"], ["Sweets","حلويات","شیرینی"], ["Cake","كيكة","کێک"], ["Wedding cake","كيكة زفاف","کێکی هاوسەرگیری"], ["Fruit table","طاولة فواكه","مێزی میوە"],
+  ["Welcome drinks","مشروبات الاستقبال","خواردنەوەی پێشوازی"], ["Soft drinks","مشروبات غازية","خواردنەوەی گازی"], ["Juice","عصير","شەربەت"], ["Water","ماء","ئاو"], ["Tea","شاي","چا"], ["Coffee","قهوة","قاوە"],
+  ["Arabic coffee and tea service","خدمة القهوة العربية والشاي","خزمەتی قاوەی عەرەبی و چا"], ["Service staff","طاقم الخدمة","ستافی خزمەتگوزاری"], ["Waiter","نادل","گارسۆن"], ["Chef","طاهي","چێشتلێنەر"],
+  ["Cleaning","تنظيف","پاککردنەوە"], ["Tableware rental","تأجير الأواني","بەکرێدانی قاپ و قاچاغ"], ["Tableware and chafing dish rental","تأجير الأواني والسخانات","بەکرێدانی قاپ و گەرمکەرەوەی خواردن"],
+  ["Tables and chairs rental","تأجير طاولات وكراسي","بەکرێدانی مێز و کورسی"], ["Tent rental","تأجير خيمة","بەکرێدانی خێوەت"], ["Decoration","ديكور","ڕازاندنەوە"], ["Flowers","ورود","گوڵ"],
+  ["Delivery","توصيل","گەیاندن"], ["Delivery and setup","التوصيل والتجهيز","گەیاندن و ئامادەکردن"], ["Transport","نقل","گواستنەوە"], ["Setup","تجهيز","ئامادەکردن"]
+];
+const glossaryFor = name => GLOSSARY.find(g => g[0].toLowerCase() === String(name||"").trim().toLowerCase()) || [];
+function lookupTerm(text, from){
+  const k = String(text||"").trim().toLowerCase(); if(!k) return null;
+  const idx = {en:0, ar:1, ku:2}[from];
+  const pool = GLOSSARY.map(g=>({en:g[0], ar:g[1], ku:g[2]}))
+    .concat((S.catalog||[]).map(x=>({en:x.name, ar:x.nameAr, ku:x.nameKu})))
+    .concat((S.orders||[]).flatMap(o=>(o.items||[]).map(x=>({en:x.name, ar:x.nameAr, ku:x.nameKu}))));
+  let best = null;
+  for(const t of pool){ const v = (from==="en" ? t.en : t[from]) || ""; if(v.trim().toLowerCase()===k){ best = best ? {en:best.en||t.en, ar:best.ar||t.ar, ku:best.ku||t.ku} : {...t}; } }
+  return best;
+}
 const DEFAULT_BUSINESS = "Élysée Catering";   /* brand build replaces this */
 const INVOICE_LOGO = "data:image/png;base64,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";                   /* brand build puts the logo here (data URI) */
 const INV_COLORS = {ink:"#1C2029", accent:"#7D6A48", line:"#E2D8C5", soft:"#F6F0E3", muted:"#6B6252"};
@@ -403,38 +444,46 @@ function normalize(d){
       const category = cats.includes(t.category) ? t.category : (LEGACY.cat[t.category] && cats.includes(LEGACY.cat[t.category]) ? LEGACY.cat[t.category] : (str(t.category)||cats[cats.length-1]));
       return {id:str(t.id)||uid(), orderId, kind:t.kind, category, amount:roundC(Number(t.amount),c), currency:c, date:t.date, note:str(t.note)};
     });
-  const catalog = Array.isArray(d.catalog) ? d.catalog.filter(x=>x && str(x.name).trim()).map(x=>({id:str(x.id)||uid(), name:str(x.name).trim(), nameAr:str(x.nameAr).trim(),
-    unit: UNITS[x.unit] ? x.unit : "flat", price: roundC(Math.max(0,Number(x.price)||0), CUR[x.currency]?x.currency:"IQD"), currency: CUR[x.currency]?x.currency:"IQD"})) : seedCatalog();
+  const catalog = Array.isArray(d.catalog) ? d.catalog.filter(x=>x && str(x.name).trim()).map(x=>{
+      const pr = {USD:null, IQD:null};
+      if(x.prices){ for(const c of ["USD","IQD"]) if(x.prices[c]!=null && Number(x.prices[c])>=0) pr[c] = roundC(Number(x.prices[c]), c); }
+      else if(x.price!=null){ const c = CUR[x.currency] ? x.currency : "IQD"; pr[c] = roundC(Math.max(0,Number(x.price)||0), c); }
+      if(pr.USD==null && pr.IQD==null) pr.IQD = 0;
+      return {id:str(x.id)||uid(), name:str(x.name).trim(), nameAr:str(x.nameAr).trim()||glossaryFor(x.name)[1]||"", nameKu:str(x.nameKu).trim()||glossaryFor(x.name)[2]||"", unit: UNITS[x.unit] ? x.unit : "flat", prices: pr};
+    }) : seedCatalog();
   return {v:VERSION, sample:!!d.sample && d.v===VERSION, settings, orders, tx, catalog};
 }
 function normBusiness(b){ b = b||{}; const s = k => b[k]==null ? "" : String(b[k]);
   return {name: s("name") || DEFAULT_BUSINESS, phone: s("phone"), address: s("address"), email: s("email"), note: s("note")}; }
 function normItems(items, c){
   if(!Array.isArray(items)) return [];
-  return items.filter(x=>x && String(x.name||"").trim() && Number(x.qty)>0).map(x=>({id:String(x.id||uid()), name:String(x.name).trim(), nameAr:String(x.nameAr||"").trim(),
+  return items.filter(x=>x && String(x.name||"").trim() && Number(x.qty)>0).map(x=>({id:String(x.id||uid()), name:String(x.name).trim(), nameAr:String(x.nameAr||"").trim()||glossaryFor(x.name)[1]||"", nameKu:String(x.nameKu||"").trim()||glossaryFor(x.name)[2]||"",
     unit: UNITS[x.unit] ? x.unit : "flat", qty: Math.round(Number(x.qty)*100)/100, price: roundC(Math.max(0,Number(x.price)||0), c)}));
 }
 const lineTotal = (it, c) => roundC(it.qty * it.price, c);
 const itemsSum = o => roundC((o.items||[]).reduce((s,it)=>s+lineTotal(it,o.currency),0), o.currency);
 function syncPrice(o){ if(o.items && o.items.length) o.price = Math.max(0, roundC(itemsSum(o) - (o.discount||0), o.currency)); }
 function seedCatalog(){
-  const c = (name,nameAr,unit,price) => ({id:uid(), name, nameAr, unit, price, currency:"IQD"});
+  const c = (name,nameAr,nameKu,unit,iqd,usd) => ({id:uid(), name, nameAr, nameKu, unit, prices:{IQD:iqd, USD:usd}});
   return [
-    c("Open buffet (lamb, chicken, rice, salads)","بوفيه مفتوح (لحم، دجاج، رز، سلطات)","guest",25000),
-    c("Lunch buffet","بوفيه غداء","guest",10000),
-    c("Dinner buffet","بوفيه عشاء","guest",35000),
-    c("Whole lamb quzi","قوزي لحم غنم كامل","pcs",400000),
-    c("Dessert and sweets table","طاولة حلويات","flat",550000),
-    c("Welcome drinks","مشروبات الاستقبال","guest",2500),
-    c("Arabic coffee and tea service","خدمة القهوة العربية والشاي","flat",300000),
-    c("Service staff","طاقم الخدمة","person",50000),
-    c("Tableware and chafing dish rental","تأجير الأواني والسخانات","flat",250000),
-    c("Delivery and setup","التوصيل والتجهيز","flat",300000)
+    c("Open buffet (lamb, chicken, rice, salads)","بوفيه مفتوح (لحم، دجاج، رز، سلطات)","بوفێی کراوە (گۆشتی مەڕ، مریشک، برنج، زەڵاتە)","guest",25000,16),
+    c("Lunch buffet","بوفيه غداء","بوفێی نانی نیوەڕۆ","guest",10000,6.5),
+    c("Dinner buffet","بوفيه عشاء","بوفێی نانی ئێوارە","guest",35000,22),
+    c("Whole lamb quzi","قوزي لحم غنم كامل","قوزی مەڕی تەواو","pcs",400000,250),
+    c("Dessert and sweets table","طاولة حلويات","مێزی شیرینی","flat",550000,350),
+    c("Welcome drinks","مشروبات الاستقبال","خواردنەوەی پێشوازی","guest",2500,1.6),
+    c("Arabic coffee and tea service","خدمة القهوة العربية والشاي","خزمەتی قاوەی عەرەبی و چا","flat",300000,190),
+    c("Service staff","طاقم الخدمة","ستافی خزمەتگوزاری","person",50000,32),
+    c("Tableware and chafing dish rental","تأجير الأواني والسخانات","بەکرێدانی قاپ و گەرمکەرەوەی خواردن","flat",250000,160),
+    c("Delivery and setup","التوصيل والتجهيز","گەیاندن و ئامادەکردن","flat",300000,190)
   ];
 }
+/* price of a price-list item in a currency: its own price if set, else converted from the other one */
+function catPrice(x, c){ const o = c==="USD" ? "IQD" : "USD"; return x.prices[c]!=null ? x.prices[c] : roundC(conv(x.prices[o]||0, o, c), c); }
+function catPriceLabel(x){ return ["IQD","USD"].filter(c=>x.prices[c]!=null).map(c=>fmt(x.prices[c],c)).join(" · "); }
 function seed(){
   const o = (id,title,type,date,time,customer,phone,location,guests,price,currency,status,notes,items)=>({id,title,type,date,time,customer,phone,location,guests,price,currency,status,notes,
-    items:(items||[]).map(([name,nameAr,unit,qty,price])=>({id:uid(),name,nameAr,unit,qty,price})), discount:0, invoiceNo:"", quoteNo:""});
+    items:(items||[]).map(([name,nameAr,unit,qty,price])=>({id:uid(),name,nameAr,nameKu:(GLOSSARY.find(g=>g[0]===name)||[])[2]||"",unit,qty,price})), discount:0, invoiceNo:"", quoteNo:""});
   const t = (orderId,kind,category,amount,currency,date,note)=>({id:uid(),orderId,kind,category,amount,currency,date,note:note||""});
   return {
     v:VERSION, sample:true, settings:{main:"USD", rate:DEFAULT_RATE, lastBackup:"", theme:"system", business:normBusiness({}), seq:{inv:{},q:{}}}, catalog: seedCatalog(),
@@ -930,20 +979,26 @@ function qtyLabel(it){
 function sheetItem(orderId, itemId, catId){
   const o = orderId ? byId(orderId) : null;
   const src = o ? (o.items||[]).find(x=>x.id===itemId) : S.catalog.find(x=>x.id===catId);
-  let c = o ? o.currency : (src ? src.currency : main());
+  const c = o ? o.currency : null;
   const guests = o && +o.guests>0 ? +o.guests : 0;
-  const it = src ? {...src} : {name:"", nameAr:"", unit:"guest", qty: guests||1, price:""};
+  const it = src ? {...src} : {name:"", nameAr:"", nameKu:"", unit:"guest", qty: guests||1, price:"", prices:{USD:null, IQD:null}};
   const unitOpts = Object.entries(UNITS).map(([k,u])=>'<option value="'+k+'"'+(it.unit===k?' selected':'')+'>'+u.en+'</option>').join("");
+  const hasTr = !!(it.nameAr || it.nameKu);
+  const priceField = o
+    ? '<div class="field"><label for="it-price">Price per unit</label><div class="fieldsuffix"><input id="it-price" type="text" inputmode="decimal" autocomplete="off" value="'+esc(fmtInput(it.price,c))+'"><span>'+(c==="IQD"?"IQD":"$")+'</span></div><p class="hint" id="it-total"></p></div>'
+    : '<div class="two"><div class="field"><label for="it-piqd">Price in IQD</label><div class="fieldsuffix"><input id="it-piqd" type="text" inputmode="decimal" autocomplete="off" value="'+esc(it.prices.IQD!=null?fmtInput(it.prices.IQD,"IQD"):"")+'"><span>IQD</span></div></div>'+
+      '<div class="field"><label for="it-pusd">Price in $</label><div class="fieldsuffix"><input id="it-pusd" type="text" inputmode="decimal" autocomplete="off" value="'+esc(it.prices.USD!=null?fmtInput(it.prices.USD,"USD"):"")+'"><span>$</span></div></div></div>'+
+      '<p class="hint" id="it-total">Fill in one or both. If one is empty, the app converts at $1 = IQD '+NF.IQD.format(S.settings.rate)+'.</p>';
   const body = '<form id="f-item" class="sheetform" novalidate><div class="formbody">'+
     (o && !src && S.catalog.length ? '<div class="field"><label>From your price list</label><div class="catchips" id="it-cat">'+S.catalog.map(x=>'<button type="button" class="chip" data-cid="'+x.id+'">'+esc(x.name)+'</button>').join("")+'</div></div>' : '')+
-    '<div class="field"><label for="it-name">Service</label><input id="it-name" placeholder="e.g. Dinner buffet" value="'+esc(it.name)+'"></div>'+
-    '<div class="field"><label for="it-ar">Arabic name (for quote and invoice)</label><input id="it-ar" dir="rtl" lang="ar" placeholder="مثال: بوفيه عشاء" value="'+esc(it.nameAr)+'"></div>'+
+    '<div class="field"><label for="it-name">Service (English)</label><input id="it-name" autocomplete="off" placeholder="e.g. Dinner buffet" value="'+esc(it.name)+'"></div>'+
+    '<details class="tr" id="it-tr"'+(hasTr?' open':'')+'><summary>Arabic &amp; Kurdish names <span class="muted">(optional, for quotes and invoices)</span></summary>'+
+      '<div class="field"><label for="it-ar">Arabic</label><input id="it-ar" dir="rtl" lang="ar" autocomplete="off" placeholder="مثال: بوفيه عشاء" value="'+esc(it.nameAr||"")+'"></div>'+
+      '<div class="field"><label for="it-ku">Kurdish (Sorani)</label><input id="it-ku" dir="rtl" lang="ckb" autocomplete="off" placeholder="نموونە: بوفێی نانی ئێوارە" value="'+esc(it.nameKu||"")+'"></div>'+
+      '<p class="hint" id="it-dict"></p></details>'+
     '<div class="two"><div class="field"><label for="it-unit">Charged</label><select id="it-unit">'+unitOpts+'</select></div>'+
     (o ? '<div class="field"><label for="it-qty">Quantity</label><input id="it-qty" type="text" inputmode="decimal" value="'+esc(NF.plain.format(it.qty))+'"></div>' : '<div></div>')+'</div>'+
-    '<div class="field"><label for="it-price">Price per unit</label>'+(o
-      ? '<div class="fieldsuffix"><input id="it-price" type="text" inputmode="decimal" autocomplete="off" value="'+esc(fmtInput(it.price,c))+'"><span>'+(c==="IQD"?"IQD":"$")+'</span></div>'
-      : '<div class="pricerow"><input id="it-price" type="text" inputmode="decimal" autocomplete="off" value="'+esc(fmtInput(it.price,c))+'">'+curToggle("it-cur",c)+'</div>')+
-    '<p class="hint" id="it-total"></p></div>'+
+    priceField+
     (o && !src ? '<label class="checkrow"><input type="checkbox" id="it-save"> Also add to my price list</label>' : '')+
     (o && !src && !(o.items||[]).length && o.price>0 ? '<p class="hint">From now on the order price is the sum of its services (currently '+fmt(o.price,c)+').</p>' : '')+
     '<p class="err" id="it-err" hidden></p></div>'+
@@ -952,16 +1007,27 @@ function sheetItem(orderId, itemId, catId){
   openSheet(src ? (o ? "Edit service" : "Edit price list item") : (o ? "Add service" : "New price list item"), body, sh=>{
     const $ = q => sh.querySelector(q);
     const upd = () => {
-      const unit = $("#it-unit").value, q = o ? parseAmount($("#it-qty").value,"USD") : 1, pr = parseAmount($("#it-price").value,c);
-      if(o && unit==="flat" && !$("#it-qty").value.trim()) $("#it-qty").value = "1";
-      $("#it-total").textContent = o && q>0 && pr>=0 && !isNaN(pr) ? "= "+fmt(roundC(q*pr,c),c)+(unit==="guest"&&guests&&q!==guests?" · the order has "+guests+" guests":"") : (UNITS[unit] ? "Charged "+UNITS[unit].en : "");
+      if(!o) return;
+      const unit = $("#it-unit").value, q = parseAmount($("#it-qty").value,"USD"), pr = parseAmount($("#it-price").value,c);
+      $("#it-total").textContent = q>0 && pr>=0 && !isNaN(pr) ? "= "+fmt(roundC(q*pr,c),c)+(unit==="guest"&&guests&&q!==guests?" · the order has "+guests+" guests":"") : "";
     };
-    if(!o) wireCur(sh,"it-cur",nc=>{ c=nc; upd(); });
+    /* dictionary: fill empty translation fields from known terms (and back to English) */
+    const dict = from => {
+      const t = lookupTerm($("#it-"+({en:"name",ar:"ar",ku:"ku"}[from])).value, from); if(!t) return;
+      const filled = [];
+      if(from!=="en" && !$("#it-name").value.trim() && t.en){ $("#it-name").value = t.en; filled.push("English"); }
+      if(from!=="ar" && !$("#it-ar").value.trim() && t.ar){ $("#it-ar").value = t.ar; filled.push("Arabic"); }
+      if(from!=="ku" && !$("#it-ku").value.trim() && t.ku){ $("#it-ku").value = t.ku; filled.push("Kurdish"); }
+      if(filled.length){ $("#it-tr").open = true; $("#it-dict").textContent = filled.join(" and ")+" filled in from the dictionary. Please check."; }
+    };
+    $("#it-name").addEventListener("change",()=>dict("en"));
+    $("#it-ar").addEventListener("change",()=>dict("ar")); $("#it-ku").addEventListener("change",()=>dict("ku"));
     sh.querySelectorAll("#it-cat .chip").forEach(b=>b.addEventListener("click",()=>{
       const x = S.catalog.find(k=>k.id===b.dataset.cid); if(!x) return;
-      $("#it-name").value = x.name; $("#it-ar").value = x.nameAr; $("#it-unit").value = x.unit;
+      $("#it-name").value = x.name; $("#it-ar").value = x.nameAr||""; $("#it-ku").value = x.nameKu||""; $("#it-unit").value = x.unit;
       $("#it-qty").value = NF.plain.format(x.unit==="guest" && guests ? guests : 1);
-      $("#it-price").value = fmtInput(roundC(conv(x.price, x.currency, c), c), c);
+      $("#it-price").value = fmtInput(catPrice(x, c), c);
+      $("#it-dict").textContent = "";
       sh.querySelectorAll("#it-cat .chip").forEach(k=>k.setAttribute("aria-pressed", String(k===b))); upd();
     }));
     $("#it-unit").addEventListener("change",()=>{ if(o && $("#it-unit").value==="guest" && guests) $("#it-qty").value = NF.plain.format(guests); if(o && $("#it-unit").value==="flat") $("#it-qty").value = "1"; upd(); });
@@ -969,17 +1035,24 @@ function sheetItem(orderId, itemId, catId){
     $("#f-item").addEventListener("submit",e=>{
       e.preventDefault();
       const err = $("#it-err"), fail = m => { err.textContent = m; err.hidden = false; };
-      const name = $("#it-name").value.trim(); if(!name) return fail("Please name the service.");
-      const qty = o ? parseAmount($("#it-qty").value,"USD") : 1; if(!(qty>0)) return fail("Quantity must be above 0.");
-      const price = parseAmount($("#it-price").value,c); if(isNaN(price)) return fail("Please enter the price per unit. Example: "+(c==="IQD"?"35,000":"22"));
-      const data = {name, nameAr:$("#it-ar").value.trim(), unit:$("#it-unit").value, price};
+      dict("en");
+      const name = $("#it-name").value.trim(); if(!name) return fail("Please name the service in English.");
+      const data = {name, nameAr:$("#it-ar").value.trim(), nameKu:$("#it-ku").value.trim(), unit:$("#it-unit").value};
       if(o){
-        data.qty = qty;
+        const qty = parseAmount($("#it-qty").value,"USD"); if(!(qty>0)) return fail("Quantity must be above 0.");
+        const price = parseAmount($("#it-price").value,c); if(isNaN(price)) return fail("Please enter the price per unit. Example: "+(c==="IQD"?"35,000":"22"));
+        Object.assign(data, {qty, price});
         if(src) Object.assign(src, data); else { if(!o.items) o.items=[]; o.items.push({id:uid(), ...data}); }
-        if($("#it-save") && $("#it-save").checked && !S.catalog.some(x=>x.name.toLowerCase()===name.toLowerCase())) S.catalog.push({id:uid(), name, nameAr:data.nameAr, unit:data.unit, price, currency:c});
+        if($("#it-save") && $("#it-save").checked && !S.catalog.some(x=>x.name.toLowerCase()===name.toLowerCase()))
+          S.catalog.push({id:uid(), name, nameAr:data.nameAr, nameKu:data.nameKu, unit:data.unit, prices:{USD: c==="USD"?price:null, IQD: c==="IQD"?price:null}});
         syncPrice(o); save(); render(); sheetOrder(o.id); toast(src?"Service updated":"Service added");
       } else {
-        if(src) Object.assign(src, data, {currency:c}); else S.catalog.push({id:uid(), ...data, currency:c});
+        const rawI = $("#it-piqd").value.trim(), rawU = $("#it-pusd").value.trim();
+        const pI = rawI ? parseAmount(rawI,"IQD") : null, pU = rawU ? parseAmount(rawU,"USD") : null;
+        if((rawI && isNaN(pI)) || (rawU && isNaN(pU))) return fail("Please enter prices as numbers, e.g. 35,000 or 22.");
+        if(pI==null && pU==null) return fail("Please enter a price in IQD, in $, or both.");
+        data.prices = {IQD:pI, USD:pU};
+        if(src) Object.assign(src, data); else S.catalog.push({id:uid(), ...data});
         save(); sheetData("catalog"); toast("Price list saved");
       }
     });
@@ -1009,20 +1082,20 @@ function docNumber(kind, take){
   if(take) S.settings.seq[key][y] = n;
   return (kind==="invoice" ? "INV-" : "Q-") + y + "-" + String(n).padStart(3,"0");
 }
-function docData(o, kind, cur, take){
+function docData(o, kind, cur, take, lang){
   const field = kind==="invoice" ? "invoiceNo" : "quoteNo";
   let number = o[field];
   if(!number){ number = docNumber(kind, take); if(take){ o[field] = number; save(); } }
   const cv = v => roundC(conv(v, o.currency, cur), cur);
   const lines = (o.items && o.items.length)
-    ? o.items.map(it => { const price = cv(it.price); return {name:it.name, nameAr:it.nameAr, unit:it.unit, qty:it.qty, price, total:roundC(it.qty*price, cur)}; })
-    : [{name:(o.type==="Other"?"Catering":o.type+" catering")+(+o.guests>0?" for "+o.guests+" guests":""), nameAr:"خدمة ضيافة – "+(TYPES_AR[o.type]||"مناسبة"), unit:"flat", qty:1, price:cv(o.price), total:cv(o.price)}];
+    ? o.items.map(it => { const price = cv(it.price); return {name:it.name, nameAr:it.nameAr, nameKu:it.nameKu, unit:it.unit, qty:it.qty, price, total:roundC(it.qty*price, cur)}; })
+    : [{name:(o.type==="Other"?"Catering":o.type+" catering")+(+o.guests>0?" for "+o.guests+" guests":""), nameAr:DOC_L.ar.catering+" – "+(TYPES_AR[o.type]||"مناسبة"), nameKu:DOC_L.ku.catering+" – "+(TYPES_KU[o.type]||"بۆنە"), unit:"flat", qty:1, price:cv(o.price), total:cv(o.price)}];
   const subtotal = roundC(lines.reduce((a,l)=>a+l.total,0), cur);
   const discount = (o.items && o.items.length) ? Math.min(subtotal, cv(o.discount||0)) : 0;
   const total = roundC(subtotal - discount, cur);
   let paid = 0; for(const t of S.tx) if(t.orderId===o.id && t.kind==="in") paid += conv(t.amount, t.currency, cur);
   paid = roundC(paid, cur);
-  return {kind, number, date:todayISO, validUntil:iso(new Date(toDate(todayISO).getTime()+14*864e5)), cur, converted:cur!==o.currency, from:o.currency, rate:S.settings.rate,
+  return {kind, lang: DOC_L[lang] ? lang : "", number, date:todayISO, validUntil:iso(new Date(toDate(todayISO).getTime()+14*864e5)), cur, converted:cur!==o.currency, from:o.currency, rate:S.settings.rate,
     order:o, lines, subtotal, discount, total, paid: kind==="invoice" ? Math.min(paid,total) : 0, balance: kind==="invoice" ? Math.max(0, roundC(total-paid,cur)) : total, biz:S.settings.business};
 }
 const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -1031,7 +1104,7 @@ async function docFonts(){
   const disp = cssVar("--display") || "Georgia, serif";
   try{ await wait(Promise.all([
     document.fonts.load('400 12px "Figtree"'), document.fonts.load('600 12px "Figtree"'), document.fonts.load('700 12px "Figtree"'),
-    document.fonts.load('600 30px '+disp), document.fonts.load('400 12px "Noto Naskh Arabic"','فاتورة'), document.fonts.load('700 12px "Noto Naskh Arabic"','فاتورة')])); }catch(e){}
+    document.fonts.load('600 30px '+disp), document.fonts.load('400 12px "Noto Naskh Arabic"','فاتورة ڕێڵۆە'), document.fonts.load('700 12px "Noto Naskh Arabic"','فاتورة ڕێڵۆە')])); }catch(e){}
 }
 function loadImg(src){ return new Promise(res=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>res(null); i.src=src; }); }
 function wrapText(ctx, text, maxW){
@@ -1046,15 +1119,17 @@ async function renderDoc(d){
   const DISP = cssVar("--display") || "Georgia, serif", BODY = '"Figtree", system-ui, -apple-system, sans-serif', AR = '"Noto Naskh Arabic", "Geeza Pro", "Arial", serif';
   const logo = INVOICE_LOGO ? await loadImg(INVOICE_LOGO) : null;
   const isQ = d.kind==="quote", o = d.order, b = d.biz;
+  const L = d.lang ? DOC_L[d.lang] : null;           // second language (Arabic or Kurdish), or none
   const money = v => d.cur==="IQD" ? NF.IQD.format(v) : NF_2.format(v);
   const moneyC = v => d.cur==="IQD" ? "IQD "+NF.IQD.format(v) : "$"+NF_2.format(v);
   const pages = []; let ctx, y;
   const newPage = () => { const cv = document.createElement("canvas"); cv.width = Math.round(W*K); cv.height = Math.round(H*K);
     ctx = cv.getContext("2d"); ctx.scale(K,K); ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0,0,W,H); pages.push(cv); };
   const T = (s,x,yy,o2={}) => { ctx.font = (o2.w||400)+" "+(o2.s||10)+"px "+(o2.f||BODY); ctx.fillStyle = o2.c||P.ink; ctx.direction = o2.rtl ? "rtl" : "ltr"; ctx.textAlign = o2.a||"left"; ctx.fillText(String(s), x, yy); ctx.direction = "ltr"; };
-  const A = (s,x,yy,o2={}) => T(s, x, yy, Object.assign({f:AR, rtl:true, a:"right"}, o2));
+  const A = (s,x,yy,o2={}) => { if(L && s) T(s, x, yy, Object.assign({f:AR, rtl:true, a:"right"}, o2)); };
   const width = (s,o2={}) => { ctx.font = (o2.w||400)+" "+(o2.s||10)+"px "+(o2.f||BODY); return ctx.measureText(String(s)).width; };
   const rule = (yy,c,h) => { ctx.fillStyle = c||P.line; ctx.fillRect(M, yy, W-2*M, h||0.75); };
+  const tr = l => L ? (d.lang==="ar" ? l.nameAr : l.nameKu) : "";
 
   // ---- header ----
   newPage(); y = M;
@@ -1063,42 +1138,43 @@ async function renderDoc(d){
   else { T(b.name, M, y+22, {f:DISP, s:22, w:600}); by = y + 42; }
   for(const l of [b.phone, b.address, b.email].filter(Boolean)){ T(l, M, by, {s:9, c:P.muted}); by += 12; }
   T(isQ ? "Quote" : "Invoice", W-M, y+24, {f:DISP, s:32, w:600, a:"right"});
-  A(isQ ? "عرض سعر" : "فاتورة", W-M, y+50, {s:17, w:700, c:P.accent});
-  let my = y + 74;
-  for(const [en, ar, v] of [["No.","رقم",d.number],["Date","التاريخ",fmtShort(d.date)]].concat(isQ ? [["Valid until","صالح حتى",fmtShort(d.validUntil)]] : [])){
+  let my = y + 50;
+  if(L){ A(isQ ? L.quote : L.invoice, W-M, y+50, {s:17, w:700, c:P.accent}); my = y + 74; }
+  for(const [en, key, v] of [["No.","no",d.number],["Date","date",fmtShort(d.date)]].concat(isQ ? [["Valid until","valid",fmtShort(d.validUntil)]] : [])){
     T(v, W-M, my, {s:10, w:700, a:"right"}); const vw = width(v,{s:10,w:700});
     T(en, W-M-vw-12, my, {s:9, c:P.muted, a:"right"}); const ew = width(en,{s:9});
-    A(ar, W-M-vw-12-ew-8, my, {s:9, c:P.muted}); my += 15;
+    if(L) A(L[key], W-M-vw-12-ew-8, my, {s:9, c:P.muted}); my += 15;
   }
   y = Math.max(by, my) + 8; rule(y, P.accent, 1.2); y += 24;
 
   // ---- customer and event ----
   const c2 = W/2 + 12;
-  T("BILL TO", M, y, {s:8, w:700, c:P.accent}); A("العميل", W/2-18, y, {s:9, w:700, c:P.accent});
-  T("EVENT", c2, y, {s:8, w:700, c:P.accent}); A("المناسبة", W-M, y, {s:9, w:700, c:P.accent});
+  T("BILL TO", M, y, {s:8, w:700, c:P.accent}); if(L) A(L.billTo, W/2-18, y, {s:9, w:700, c:P.accent});
+  T("EVENT", c2, y, {s:8, w:700, c:P.accent}); if(L) A(L.event, W-M, y, {s:9, w:700, c:P.accent});
   let ly = y + 17, ry = y + 17;
   ctx.font = "700 12px "+BODY; for(const l of wrapText(ctx, o.customer || "—", W/2-M-24)){ T(l, M, ly, {s:12, w:700}); ly += 15; }
   if(o.phone){ T(o.phone, M, ly, {s:9.5, c:P.muted}); ly += 13; }
   ctx.font = "700 11px "+BODY; for(const l of wrapText(ctx, o.title, W-M-c2)){ T(l, c2, ry, {s:11, w:700}); ry += 14; }
-  T(o.type, c2, ry, {s:9.5, c:P.muted}); A(TYPES_AR[o.type]||"", W-M, ry, {s:9.5, c:P.muted}); ry += 13;
+  T(o.type, c2, ry, {s:9.5, c:P.muted}); if(L) A(L.types[o.type]||"", W-M, ry, {s:9.5, c:P.muted}); ry += 13;
   T(fmtLong(o.date)+(o.time?", "+o.time:""), c2, ry, {s:9.5, c:P.muted}); ry += 13;
   if(o.location){ T(o.location, c2, ry, {s:9.5, c:P.muted}); ry += 13; }
-  if(+o.guests>0){ T(o.guests+" guests", c2, ry, {s:9.5, c:P.muted}); A("عدد الضيوف: "+o.guests, W-M, ry, {s:9.5, c:P.muted}); ry += 13; }
+  if(+o.guests>0){ T(o.guests+" guests", c2, ry, {s:9.5, c:P.muted}); if(L) A(L.guests+": "+o.guests, W-M, ry, {s:9.5, c:P.muted}); ry += 13; }
   y = Math.max(ly, ry) + 16;
 
   // ---- services table ----
   const X = {dL:M+10, dR:M+262, q:M+318, u:W-M-104, a:W-M-10};
   const curLbl = d.cur==="IQD" ? "IQD" : "USD";
+  const HH = L ? 36 : 26;
   const head = () => {
-    ctx.fillStyle = P.soft; ctx.fillRect(M, y, W-2*M, 36);
-    T("Description", X.dL, y+15, {s:8.5, w:700}); A("الوصف", X.dR, y+15, {s:9.5, w:700, c:P.muted});
-    T("Qty", X.q, y+15, {s:8.5, w:700, a:"right"}); A("الكمية", X.q, y+28, {s:9, c:P.muted});
-    T("Unit price ("+curLbl+")", X.u, y+15, {s:8.5, w:700, a:"right"}); A("سعر الوحدة", X.u, y+28, {s:9, c:P.muted});
-    T("Amount ("+curLbl+")", X.a, y+15, {s:8.5, w:700, a:"right"}); A("المبلغ", X.a, y+28, {s:9, c:P.muted});
-    y += 36 + 6;
+    ctx.fillStyle = P.soft; ctx.fillRect(M, y, W-2*M, HH);
+    T("Description", X.dL, y+16, {s:8.5, w:700}); if(L) A(L.desc, X.dR, y+16, {s:9.5, w:700, c:P.muted});
+    T("Qty", X.q, y+16, {s:8.5, w:700, a:"right"}); if(L) A(L.qty, X.q, y+29, {s:9, c:P.muted});
+    T("Unit price ("+curLbl+")", X.u, y+16, {s:8.5, w:700, a:"right"}); if(L) A(L.unit, X.u, y+29, {s:9, c:P.muted});
+    T("Amount ("+curLbl+")", X.a, y+16, {s:8.5, w:700, a:"right"}); if(L) A(L.amount, X.a, y+29, {s:9, c:P.muted});
+    y += HH + 6;
   };
   const LIMIT = H - M - 60;
-  const contHead = () => { T((isQ ? "Quote " : "Invoice ")+d.number+" · continued", M, y+10, {s:9.5, w:700}); A(isQ ? "عرض سعر – تابع" : "فاتورة – تابع", W-M, y+10, {s:9.5, c:P.muted}); y += 26; };
+  const contHead = () => { T((isQ ? "Quote " : "Invoice ")+d.number+" · continued", M, y+10, {s:9.5, w:700}); if(L) A((isQ ? L.quote : L.invoice)+" – "+L.cont, W-M, y+10, {s:9.5, c:P.muted}); y += 26; };
   head();
   for(const l of d.lines){
     ctx.font = "600 10.5px "+BODY; const nl = wrapText(ctx, l.name, X.dR - X.dL - 8);
@@ -1106,7 +1182,7 @@ async function renderDoc(d){
     if(y + rowH > LIMIT){ newPage(); y = M; contHead(); head(); }
     let yy = y + 12;
     for(const t of nl){ T(t, X.dL, yy, {s:10.5, w:600}); yy += 13; }
-    T(UNITS[l.unit] ? UNITS[l.unit].en : "", X.dL, yy, {s:8.5, c:P.muted}); if(l.nameAr) A(l.nameAr, X.dR, yy, {s:9.5, c:P.muted});
+    T(UNITS[l.unit] ? UNITS[l.unit].en : "", X.dL, yy, {s:8.5, c:P.muted}); A(tr(l), X.dR, yy, {s:9.5, c:P.muted});
     T(NF.plain.format(l.qty), X.q, y+12, {s:10, a:"right"});
     T(money(l.price), X.u, y+12, {s:10, a:"right"});
     T(money(l.total), X.a, y+12, {s:10, w:700, a:"right"});
@@ -1114,32 +1190,32 @@ async function renderDoc(d){
   }
 
   // ---- totals + notes ----
-  const rows = [["Subtotal","المجموع الفرعي",moneyC(d.subtotal)]];
-  if(d.discount) rows.push(["Discount","الخصم","− "+moneyC(d.discount)]);
-  rows.push(["Total","الإجمالي",moneyC(d.total),"big"]);
-  if(!isQ && d.paid) rows.push(["Paid","المدفوع","− "+moneyC(d.paid)]);
-  if(!isQ) rows.push(["Balance due","المبلغ المستحق",moneyC(d.balance),"band"]);
+  const rows = [["Subtotal","subtotal",moneyC(d.subtotal)]];
+  if(d.discount) rows.push(["Discount","discount","− "+moneyC(d.discount)]);
+  rows.push(["Total","total",moneyC(d.total),"big"]);
+  if(!isQ && d.paid) rows.push(["Paid","paid","− "+moneyC(d.paid)]);
+  if(!isQ) rows.push(["Balance due","balance",moneyC(d.balance),"band"]);
   const notes = [];
-  if(d.converted) notes.push(["Amounts converted from "+(d.from==="IQD"?"Iraqi dinar":"US dollars")+" at $1 = IQD "+NF.IQD.format(d.rate)+".", "تم تحويل المبالغ بسعر صرف 1 دولار = "+NF.IQD.format(d.rate)+" دينار."]);
-  if(isQ) notes.push(["This quote is valid for 14 days.","هذا العرض صالح لمدة 14 يوماً."]);
+  if(d.converted) notes.push(["Amounts converted from "+(d.from==="IQD"?"Iraqi dinar":"US dollars")+" at $1 = IQD "+NF.IQD.format(d.rate)+".", L ? L.conv(NF.IQD.format(d.rate)) : ""]);
+  if(isQ) notes.push(["This quote is valid for 14 days.", L ? L.validNote : ""]);
   if(b.note) notes.push([b.note, ""]);
   const need = rows.length*22 + 40;
   if(y + need > LIMIT){ newPage(); y = M; contHead(); }
   y += 14;
   const tx0 = W - M - 236; let ty = y;
-  for(const [en, ar, v, kind] of rows){
+  for(const [en, key, v, kind] of rows){
     if(kind==="band"){ ctx.fillStyle = P.soft; ctx.fillRect(tx0-10, ty-15, W-M-tx0+10, 24); }
-    if(kind==="big"){ rule(ty-15, P.line, 0.75); ctx.fillStyle = P.line; }
+    if(kind==="big") rule(ty-15, P.line, 0.75);
     const big = kind==="big" || kind==="band";
     T(en, tx0, ty, {s:big?11:9.5, w:big?700:400, c:big?P.ink:P.muted});
-    A(ar, W-M-112, ty, {s:big?10.5:9.5, w:big?700:400, c:big?P.ink:P.muted});
+    if(L) A(L[key], W-M-112, ty, {s:big?10.5:9.5, w:big?700:400, c:big?P.ink:P.muted});
     T(v, W-M, ty, {s:big?12:10, w:700, a:"right", c:kind==="band"?P.accent:P.ink});
     ty += big ? 26 : 20;
   }
   let ny = y;
-  for(const [en, ar] of notes){
+  for(const [en, loc] of notes){
     ctx.font = "400 9px "+BODY; for(const l of wrapText(ctx, en, tx0 - M - 30)){ T(l, M, ny, {s:9, c:P.muted}); ny += 12; }
-    if(ar){ ctx.font = "400 9.5px "+AR; for(const l of wrapText(ctx, ar, tx0 - M - 30)){ A(l, tx0 - 30, ny, {s:9.5, c:P.muted}); ny += 13; } }
+    if(loc){ ctx.font = "400 9.5px "+AR; for(const l of wrapText(ctx, loc, tx0 - M - 30)){ A(l, tx0 - 30, ny, {s:9.5, c:P.muted}); ny += 13; } }
     ny += 6;
   }
 
@@ -1148,7 +1224,7 @@ async function renderDoc(d){
     ctx = cv.getContext("2d");
     rule(H-M-22, P.accent, 0.8);
     T("Thank you for choosing "+b.name+".", W/2, H-M-6, {s:9, w:600, a:"center"});
-    A("شكراً لاختياركم", W/2, H-M+8, {s:9.5, c:P.muted, a:"center"});
+    if(L) A(L.thanks, W/2, H-M+8, {s:9.5, c:P.muted, a:"center"});
     if(pages.length>1) T((i+1)+" / "+pages.length, W-M, H-M-6, {s:8.5, c:P.muted, a:"right"});
     T(d.number, M, H-M-6, {s:8.5, c:P.muted});
   });
@@ -1193,9 +1269,10 @@ async function shareFile(blob, name, title){
 }
 function sheetDoc(id){
   const o = byId(id); if(!o) return;
-  let kind = o.status==="inquiry" ? "quote" : "invoice", cur = o.currency, busy = false;
+  let kind = o.status==="inquiry" ? "quote" : "invoice", cur = o.currency, lang = "", busy = false;
   const body = '<div class="seg" id="doc-kind" role="group" aria-label="Document"><button type="button" data-k="quote" aria-pressed="'+(kind==="quote")+'">Quote</button><button type="button" data-k="invoice" aria-pressed="'+(kind==="invoice")+'">Invoice</button></div>'+
     '<div class="field"><label>Currency on the document</label>'+curToggle("doc-cur",cur)+'</div>'+
+    '<div class="field"><label>Second language <span class="muted" style="font-weight:400">(English is always included)</span></label><div class="seg" id="doc-lang" role="group" aria-label="Second language"><button type="button" data-l="" aria-pressed="true">None</button><button type="button" data-l="ar" aria-pressed="false" lang="ar">العربية</button><button type="button" data-l="ku" aria-pressed="false" lang="ckb">کوردی</button></div></div>'+
     (!(o.items && o.items.length) ? '<p class="hint">Tip: add services to the order to list them one by one. Right now the document shows one line with the total.</p>' : '')+
     '<div class="docprev" id="doc-prev" aria-live="polite"></div>'+
     '<div class="formfoot" style="position:sticky;bottom:0;background:var(--bg);padding-bottom:4px"><button class="btn" id="doc-share" type="button">Share PDF</button><p class="hint" id="doc-num" style="text-align:center"></p></div>';
@@ -1203,7 +1280,7 @@ function sheetDoc(id){
     const prev = sh.querySelector("#doc-prev"), num = sh.querySelector("#doc-num");
     const draw = async () => {
       prev.innerHTML = '<p class="hint">Preparing preview …</p>';
-      const d = docData(o, kind, cur, false);
+      const d = docData(o, kind, cur, false, lang);
       num.textContent = (o[kind==="invoice"?"invoiceNo":"quoteNo"] ? "" : "Next number: ") + d.number;
       const pages = await renderDoc(d);
       if(!sh.isConnected) return;
@@ -1212,10 +1289,11 @@ function sheetDoc(id){
     };
     sh.querySelectorAll("#doc-kind button").forEach(bt=>bt.addEventListener("click",()=>{ kind = bt.dataset.k; sh.querySelectorAll("#doc-kind button").forEach(x=>x.setAttribute("aria-pressed", String(x===bt))); draw(); }));
     wireCur(sh, "doc-cur", nc=>{ cur = nc; draw(); });
+    sh.querySelectorAll("#doc-lang button").forEach(bt=>bt.addEventListener("click",()=>{ lang = bt.dataset.l; sh.querySelectorAll("#doc-lang button").forEach(x=>x.setAttribute("aria-pressed", String(x===bt))); draw(); }));
     sh.querySelector("#doc-share").addEventListener("click", async () => {
       if(busy) return; busy = true;
       try{
-        const d = docData(o, kind, cur, true);
+        const d = docData(o, kind, cur, true, lang);
         num.textContent = d.number;
         const blob = await pagesToPdf(await renderDoc(d));
         const safe = (d.number+" "+(o.customer||o.title)).replace(/[^\w\- .]+/g,"").trim().replace(/\s+/g,"-");
@@ -1250,7 +1328,7 @@ function sheetData(focus){
     '<div class="field"><label for="bz-note">Payment note on invoices</label><textarea id="bz-note" placeholder="e.g. 30% deposit on booking, balance on the event day. Cash or Zain Cash.">'+esc(bz.note)+'</textarea></div>'+
     '<button class="btn ghost" data-act="savebiz">Save business details</button></section>'+
     '<section id="set-cat"><h2>Price list <small>'+S.catalog.length+'</small></h2><p class="hint" style="margin-top:-4px">Your standard services. Pick them in an order with two taps. The starting list has sample prices: adjust them to yours.</p>'+
-    '<div class="list">'+(S.catalog.length ? S.catalog.map(x=>'<button class="row" data-act="editcat" data-cid="'+x.id+'"><div class="main"><span class="t">'+esc(x.name)+'</span><span class="s">'+(UNITS[x.unit]?UNITS[x.unit].en:"")+(x.nameAr?' · <span dir="rtl" lang="ar">'+esc(x.nameAr)+'</span>':'')+'</span></div><div class="end"><span class="amt num">'+fmt(x.price,x.currency)+'</span></div></button>').join("") : '<div class="empty">No services yet.</div>')+'</div>'+
+    '<div class="list">'+(S.catalog.length ? S.catalog.map(x=>'<button class="row" data-act="editcat" data-cid="'+x.id+'"><div class="main"><span class="t">'+esc(x.name)+'</span><span class="s">'+(UNITS[x.unit]?UNITS[x.unit].en:"")+(x.nameAr?' · <span dir="rtl" lang="ar">'+esc(x.nameAr)+'</span>':'')+(x.nameKu?' · <span dir="rtl" lang="ckb">'+esc(x.nameKu)+'</span>':'')+'</span></div><div class="end"><span class="amt num">'+catPriceLabel(x)+'</span></div></button>').join("") : '<div class="empty">No services yet.</div>')+'</div>'+
     '<button class="btn ghost" data-act="addcat">+ Add to price list</button></section>'+
     '<section><h2>Currency</h2>'+
     '<div class="field"><label>Show totals in</label><div class="seg" id="set-main"><button type="button" data-c="USD" aria-pressed="'+(m==="USD")+'">US dollar ($)</button><button type="button" data-c="IQD" aria-pressed="'+(m==="IQD")+'">Iraqi dinar (IQD)</button></div></div>'+
