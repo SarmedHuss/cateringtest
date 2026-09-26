@@ -1302,24 +1302,37 @@ async function renderDoc(d){
   if(d.converted) notes.push(["Amounts converted from "+(d.from==="IQD"?"Iraqi dinar":"US dollars")+" at $1 = IQD "+NF.IQD.format(d.rate)+".", L ? L.conv(NF.IQD.format(d.rate)) : ""]);
   if(isQ) notes.push(["This quote is valid for 14 days.", L ? L.validNote : ""]);
   if(b.note) notes.push([b.note, ""]);
-  const need = rows.length*22 + 40;
+  /* totals block on the right; with a second language the labels get their own column next to the amounts */
+  const TW = L ? 290 : 236, tx0 = W - M - TW;
+  ctx.font = "700 12px "+BODY; const vw = Math.max(...rows.map(r => ctx.measureText(r[2]).width));
+  const arR = W - M - vw - 18;            /* right edge of the Arabic/Kurdish label column */
+  /* notes: English only → left of the totals; bilingual → below them, English left and Arabic/Kurdish right, line by line */
+  const half = (W - 2*M)/2 - 14;
+  const noteRows = notes.map(([en, loc]) => {
+    ctx.font = "400 9px "+BODY; const e = wrapText(ctx, en, L ? half : tx0 - M - 30);
+    let a = []; if(L && loc){ ctx.font = "400 9.5px "+AR; a = wrapText(ctx, loc, half); }
+    return {e, a, h: Math.max(e.length*12, a.length*14) + 6};
+  });
+  const notesH = noteRows.reduce((s, r) => s + r.h, 0);
+  const need = rows.length*24 + 36 + (L ? notesH + 20 : 0);
   if(y + need > LIMIT){ newPage(); y = M; contHead(); }
   y += 14;
-  const tx0 = W - M - 236; let ty = y;
+  let ty = y;
   for(const [en, key, v, kind] of rows){
     if(kind==="band"){ ctx.fillStyle = P.soft; ctx.fillRect(tx0-10, ty-15, W-M-tx0+10, 24); }
-    if(kind==="big") rule(ty-15, P.line, 0.75);
+    if(kind==="big"){ ty += 6; ctx.fillStyle = P.line; ctx.fillRect(tx0-10, ty-17, W-M-tx0+10, 0.75); }
     const big = kind==="big" || kind==="band";
     T(en, tx0, ty, {s:big?11:9.5, w:big?700:400, c:big?P.ink:P.muted});
-    if(L) A(L[key], W-M-112, ty, {s:big?10.5:9.5, w:big?700:400, c:big?P.ink:P.muted});
+    if(L) A(L[key], arR, ty, {s:big?10.5:9.5, w:big?700:400, c:big?P.ink:P.muted});
     T(v, W-M, ty, {s:big?12:10, w:700, a:"right", c:kind==="band"?P.accent:P.ink});
     ty += big ? 26 : 20;
   }
-  let ny = y;
-  for(const [en, loc] of notes){
-    ctx.font = "400 9px "+BODY; for(const l of wrapText(ctx, en, tx0 - M - 30)){ T(l, M, ny, {s:9, c:P.muted}); ny += 12; }
-    if(loc){ ctx.font = "400 9.5px "+AR; for(const l of wrapText(ctx, loc, tx0 - M - 30)){ A(l, tx0 - 30, ny, {s:9.5, c:P.muted}); ny += 13; } }
-    ny += 6;
+  let ny = L ? ty + 10 : y;
+  if(L && noteRows.length){ rule(ny - 4, P.line, 0.6); ny += 12; }
+  for(const r of noteRows){
+    let ey = ny; for(const l of r.e){ T(l, M, ey, {s:9, c:P.muted}); ey += 12; }
+    let ay = ny; for(const l of r.a){ A(l, W-M, ay, {s:9.5, c:P.muted}); ay += 14; }
+    ny += r.h;
   }
 
   // ---- footer on every page ----
