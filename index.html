@@ -134,8 +134,9 @@ h2 small{font-family:var(--body);font-size:var(--fs-sub);color:var(--muted);font
 .tr summary{font-weight:600;font-size:var(--fs-sub);cursor:pointer;color:var(--ink)}
 .tr summary .muted{font-weight:400}
 .tr[open] summary{margin-bottom:4px}
-.trrow{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
-.btn.small{padding:8px 12px;font-size:var(--fs-sub);border-radius:10px}
+.trrow{display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-top:10px}
+.trbtn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:99px;padding:9px 16px;background:var(--accent-soft);color:var(--ink);font:inherit;font-size:var(--fs-sub);font-weight:600;cursor:pointer}
+.trbtn:active{filter:brightness(.94)}
 .trrow .hint:empty{display:none}
 .checkrow{display:flex;align-items:center;gap:10px;font-size:var(--fs-sub);color:var(--muted)}
 .checkrow input{width:20px;height:20px;accent-color:var(--accent)}
@@ -1085,7 +1086,7 @@ function sheetItem(orderId, itemId, catId){
     '<details class="tr" id="it-tr"'+(hasTr?' open':'')+'><summary>Arabic &amp; Kurdish names <span class="muted">(optional, for quotes and invoices)</span></summary>'+
       '<div class="field"><label for="it-ar">Arabic</label><input id="it-ar" dir="rtl" lang="ar" autocomplete="off" placeholder="مثال: بوفيه عشاء" value="'+esc(it.nameAr||"")+'"></div>'+
       '<div class="field"><label for="it-ku">Kurdish (Sorani)</label><input id="it-ku" dir="rtl" lang="ckb" autocomplete="off" placeholder="نموونە: بوفێی نانی ئێوارە" value="'+esc(it.nameKu||"")+'"></div>'+
-      '<div class="trrow"><button type="button" class="btn ghost small" id="it-translate">Translate from English</button><p class="hint" id="it-dict" aria-live="polite"></p></div></details>'+
+      '<div class="trrow"><button type="button" class="trbtn" id="it-translate"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h9M8.5 3v2M11 5c-1 4-3.5 7-7 9M6 9c1.5 2.5 3.5 4 6 5"/><path d="M13 21l4-9 4 9M14.5 18h5"/></svg>Translate from English</button><p class="hint" id="it-dict" aria-live="polite"></p></div></details>'+
     '<div class="two"><div class="field"><label for="it-unit">Charged</label><select id="it-unit">'+unitOpts+'</select></div>'+
     (o ? '<div class="field"><label for="it-qty">Quantity</label><input id="it-qty" type="text" inputmode="decimal" value="'+esc(NF.plain.format(it.qty))+'"></div>' : '<div></div>')+'</div>'+
     priceField+
