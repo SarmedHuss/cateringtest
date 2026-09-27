@@ -134,11 +134,27 @@ h2 small{font-family:var(--body);font-size:var(--fs-sub);color:var(--muted);font
 .tr summary{font-weight:600;font-size:var(--fs-sub);cursor:pointer;color:var(--ink)}
 .tr summary .muted{font-weight:400}
 .tr[open] summary{margin-bottom:4px}
+.lblrow{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+.linkbtn{border:0;background:none;padding:0;font:inherit;font-size:var(--fs-label);font-weight:700;color:var(--accent);cursor:pointer;white-space:nowrap}
+.range{display:flex;flex-direction:column;gap:10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface)}
+.rangeinfo{margin:0;min-height:44px;display:flex;align-items:center;font-weight:600;color:var(--ink)}
+.wdrow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.wdrow button{border:1px solid var(--line);background:var(--bg);color:var(--muted);border-radius:9px;padding:8px 0;font:inherit;font-size:var(--fs-label);font-weight:700}
+.wdrow button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.dgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.dcell{border:1px dashed var(--line);background:transparent;color:var(--muted);border-radius:9px;padding:5px 0;display:flex;flex-direction:column;align-items:center;gap:1px;font:inherit}
+.dcell span{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.dcell b{font-size:var(--fs-sub);text-decoration:line-through;font-weight:600}
+.dcell.on{border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.dcell.on b{text-decoration:none;font-weight:700}
+.dcell.today{box-shadow:inset 0 0 0 1.5px var(--accent)}
 .trrow{display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-top:10px}
 .trbtn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:99px;padding:9px 16px;background:var(--accent-soft);color:var(--ink);font:inherit;font-size:var(--fs-sub);font-weight:600;cursor:pointer}
 .trbtn:active{filter:brightness(.94)}
 .trrow .hint:empty{display:none}
 .checkrow{display:flex;align-items:center;gap:10px;font-size:var(--fs-sub);color:var(--muted)}
+.checkrow[hidden]{display:none}
+.field input[readonly]{background:var(--surface-2);color:var(--muted)}
 .checkrow input{width:20px;height:20px;accent-color:var(--accent)}
 .fieldsuffix{display:flex;align-items:center;gap:8px}
 .fieldsuffix span{font-weight:700;color:var(--muted);white-space:nowrap}
@@ -315,16 +331,16 @@ const STATUS = {inquiry:"Inquiry", confirmed:"Confirmed", done:"Done", cancelled
 const TYPES = ["Wedding","Engagement","Birthday","Graduation","Corporate event","Condolence (Fatiha)","Religious occasion","Other"];
 const CAT_IN = ["Deposit","Final payment","Payment","Other income"];
 const CAT_OUT = ["Food","Drinks","Staff","Equipment & rental","Transport","Fixed costs","Other"];
-const UNITS = {guest:{en:"per guest",ar:"لكل ضيف",ku:"بۆ هەر میوانێک"}, person:{en:"per person",ar:"لكل شخص",ku:"بۆ هەر کەسێک"}, pcs:{en:"pcs",ar:"قطعة",ku:"دانە"}, flat:{en:"flat rate",ar:"مبلغ مقطوع",ku:"بڕی دیاریکراو"}};
+const UNITS = {guest:{en:"per guest",ar:"لكل ضيف",ku:"بۆ هەر میوانێک"}, person:{en:"per person",ar:"لكل شخص",ku:"بۆ هەر کەسێک"}, day:{en:"per day",ar:"لكل يوم",ku:"بۆ هەر ڕۆژێک"}, pcs:{en:"pcs",ar:"قطعة",ku:"دانە"}, flat:{en:"flat rate",ar:"مبلغ مقطوع",ku:"بڕی دیاریکراو"}};
 const TYPES_AR = {"Wedding":"زفاف","Engagement":"خطوبة","Birthday":"عيد ميلاد","Graduation":"حفل تخرج","Corporate event":"مناسبة شركة","Condolence (Fatiha)":"مجلس عزاء","Religious occasion":"مناسبة دينية","Other":"مناسبة"};
 const TYPES_KU = {"Wedding":"ئاهەنگی هاوسەرگیری","Engagement":"دەستگیرانی","Birthday":"ڕۆژی لەدایکبوون","Graduation":"ئاهەنگی دەرچوون","Corporate event":"بۆنەی کۆمپانیا","Condolence (Fatiha)":"پرسە","Religious occasion":"بۆنەی ئایینی","Other":"بۆنە"};
 /* second language on quotes and invoices (English is always there) */
 const DOC_LANGS = {ar:"العربية", ku:"کوردی"};
 const DOC_L = {
-  ar:{invoice:"فاتورة", quote:"عرض سعر", no:"رقم", date:"التاريخ", valid:"صالح حتى", billTo:"العميل", event:"المناسبة", guests:"عدد الضيوف", desc:"الوصف", qty:"الكمية", unit:"سعر الوحدة", amount:"المبلغ",
+  ar:{invoice:"فاتورة", quote:"عرض سعر", no:"رقم", date:"التاريخ", valid:"صالح حتى", billTo:"العميل", event:"المناسبة", guests:"عدد الضيوف", days:"عدد الأيام", desc:"الوصف", qty:"الكمية", unit:"سعر الوحدة", amount:"المبلغ",
       subtotal:"المجموع الفرعي", discount:"الخصم", total:"الإجمالي", paid:"المدفوع", balance:"المبلغ المستحق", thanks:"شكراً لاختياركم", cont:"تابع", catering:"خدمة ضيافة",
       validNote:"هذا العرض صالح لمدة 14 يوماً.", conv:r=>"تم تحويل المبالغ بسعر صرف 1 دولار = "+r+" دينار.", types:TYPES_AR},
-  ku:{invoice:"فاکتۆر", quote:"پێشنیاری نرخ", no:"ژمارە", date:"بەروار", valid:"کارایە تا", billTo:"کڕیار", event:"بۆنە", guests:"ژمارەی میوان", desc:"وەسف", qty:"بڕ", unit:"نرخی یەکە", amount:"کۆی نرخ",
+  ku:{invoice:"فاکتۆر", quote:"پێشنیاری نرخ", no:"ژمارە", date:"بەروار", valid:"کارایە تا", billTo:"کڕیار", event:"بۆنە", guests:"ژمارەی میوان", days:"ژمارەی ڕۆژ", desc:"وەسف", qty:"بڕ", unit:"نرخی یەکە", amount:"کۆی نرخ",
       subtotal:"کۆی لاوەکی", discount:"داشکاندن", total:"کۆی گشتی", paid:"پارەی دراو", balance:"پارەی ماوە", thanks:"سوپاس بۆ هەڵبژاردنتان", cont:"بەردەوام", catering:"خزمەتگوزاری خواردن",
       validNote:"ئەم پێشنیارە بۆ ماوەی 14 ڕۆژ کارایە.", conv:r=>"بڕەکان گۆڕدراون بە نرخی 1 دۆلار = "+r+" دینار.", types:TYPES_KU}
 };
@@ -521,7 +537,10 @@ function normalize(d){
     const c = cur(o.currency);
     const status = STATUS[o.status] ? o.status : (LEGACY.status[o.status]||"inquiry");
     const type = TYPES.includes(o.type) ? o.type : (LEGACY.type[o.type]||"Other");
-    return {id:str(o.id)||uid(), title:str(o.title)||"Untitled", type, date:o.date, time:str(o.time), customer:str(o.customer),
+    const endDate = isDate(o.endDate) && o.endDate > o.date ? o.endDate : "";
+    const inRange = a => Array.isArray(a) ? [...new Set(a.filter(k => isDate(k) && k >= o.date && k <= endDate))].sort() : [];
+    const weekdays = Array.isArray(o.weekdays) ? [...new Set(o.weekdays.map(Number).filter(n => n>=0 && n<=6))] : WD_DEFAULT.slice();
+    return {id:str(o.id)||uid(), title:str(o.title)||"Untitled", type, date:o.date, endDate, weekdays: endDate ? weekdays : WD_DEFAULT.slice(), on: inRange(o.on), off: inRange(o.off), time:str(o.time), customer:str(o.customer),
       phone:str(o.phone), location:str(o.location), guests:str(o.guests), price:roundC(Math.max(0,Number(o.price)||0),c), currency:c, status, notes:str(o.notes),
       items: normItems(o.items, c), discount: roundC(Math.max(0, Number(o.discount)||0), c), invoiceNo: str(o.invoiceNo), quoteNo: str(o.quoteNo)};
   });
@@ -549,10 +568,34 @@ function normBusiness(b){ b = b||{}; const s = k => b[k]==null ? "" : String(b[k
 function normItems(items, c){
   if(!Array.isArray(items)) return [];
   return items.filter(x=>x && String(x.name||"").trim() && Number(x.qty)>0).map(x=>({id:String(x.id||uid()), name:String(x.name).trim(), nameAr:String(x.nameAr||"").trim()||glossaryFor(x.name)[1]||"", nameKu:String(x.nameKu||"").trim()||glossaryFor(x.name)[2]||"",
-    unit: UNITS[x.unit] ? x.unit : "flat", qty: Math.round(Number(x.qty)*100)/100, price: roundC(Math.max(0,Number(x.price)||0), c)}));
+    unit: UNITS[x.unit] ? x.unit : "flat", qty: Math.round(Number(x.qty)*100)/100, price: roundC(Math.max(0,Number(x.price)||0), c), daily: !!x.daily}));
 }
-const lineTotal = (it, c) => roundC(it.qty * it.price, c);
-const itemsSum = o => roundC((o.items||[]).reduce((s,it)=>s+lineTotal(it,o.currency),0), o.currency);
+/* multi-day orders (e.g. two weeks of staff lunches): start date + end date, weekdays (JS getDay, Friday off by default),
+   single days switched on (on) or off (off) by hand. Services marked "daily" are multiplied by the number of days. */
+const WD_DEFAULT = [6,0,1,2,3,4];
+const WD_ORDER = [6,0,1,2,3,4,5];                 /* Saturday first, like the calendar */
+const isMulti = o => !!(o.endDate && o.endDate > o.date);
+function orderDays(o){
+  if(!isMulti(o)) return [o.date];
+  const out = [], wd = new Set(o.weekdays||WD_DEFAULT), on = new Set(o.on||[]), off = new Set(o.off||[]);
+  for(let d = toDate(o.date), e = toDate(o.endDate); d <= e; d.setDate(d.getDate()+1)){ const k = iso(d); if(on.has(k) || (wd.has(d.getDay()) && !off.has(k))) out.push(k); }
+  return out;
+}
+const dayCount = o => isMulti(o) ? orderDays(o).length : 1;
+const lastDay = o => isMulti(o) ? o.endDate : o.date;
+const onDay = (o, k) => isMulti(o) ? (k >= o.date && k <= o.endDate && orderDays(o).includes(k)) : o.date === k;
+function rangeLabel(o, long){
+  if(!isMulti(o)) return long ? fmtLong(o.date) : fmtMed(o.date);
+  const a = toDate(o.date), b = toDate(o.endDate), sameY = a.getFullYear()===b.getFullYear(), sameM = sameY && a.getMonth()===b.getMonth();
+  const M_ = long ? MONTHS : MSHORT;
+  return a.getDate()+(sameM?"":" "+M_[a.getMonth()])+(sameY?"":" "+a.getFullYear())+" – "+b.getDate()+" "+M_[b.getMonth()]+" "+b.getFullYear();
+}
+const daysLabel = o => plural(dayCount(o), "day");
+/* "per day" services on a multi-day order: the quantity is the number of days and follows them */
+const effQty = (it, n) => it.unit==="day" && (n||1) > 1 ? n : it.qty;
+const dayMult = (it, n) => it.daily && it.unit!=="day" ? (n||1) : 1;
+const lineTotal = (it, c, n) => roundC(effQty(it,n) * it.price * dayMult(it,n), c);
+const itemsSum = o => { const n = dayCount(o); return roundC((o.items||[]).reduce((s,it)=>s+lineTotal(it,o.currency,n),0), o.currency); };
 function syncPrice(o){ if(o.items && o.items.length) o.price = Math.max(0, roundC(itemsSum(o) - (o.discount||0), o.currency)); }
 function seedCatalog(){
   const c = (name,nameAr,nameKu,unit,iqd,usd) => ({id:uid(), name, nameAr, nameKu, unit, prices:{IQD:iqd, USD:usd}});
@@ -709,7 +752,7 @@ function orderRow(o){
   const d = toDate(o.date), f = fin(o);
   return '<button class="row" data-act="open" data-id="'+o.id+'">'+
     '<div class="datebox"><span class="d num">'+d.getDate()+'</span><span class="m">'+MSHORT[d.getMonth()]+'</span></div>'+
-    '<div class="main"><span class="t">'+esc(o.title)+'</span><span class="s">'+esc(o.customer||"–")+(o.guests?' · '+esc(o.guests)+' guests':'')+'</span></div>'+
+    '<div class="main"><span class="t">'+esc(o.title)+'</span><span class="s">'+(isMulti(o)?rangeLabel(o)+' · '+daysLabel(o)+' · ':'')+esc(o.customer||"–")+(o.guests?' · '+esc(o.guests)+' guests':'')+'</span></div>'+
     '<div class="end"><span class="amt num">'+fmt(o.price||0,o.currency)+'</span>'+(o.status==="inquiry"||o.status==="cancelled"?statusPill(o.status):payPill(o,f))+'</div></button>';
 }
 function monthTotals(key){
@@ -736,7 +779,7 @@ function vHome(){
   const tt = monthTotals(mKey(U.month));
   const openOrders = S.orders.filter(o=>fin(o).open>0).sort((a,b)=>a.date.localeCompare(b.date));
   const openSum = openOrders.reduce((s,o)=>s+conv(fin(o).open,o.currency,main()),0);
-  const upcoming = S.orders.filter(o=>o.date>=todayISO && o.status!=="cancelled").sort((a,b)=>a.date.localeCompare(b.date)).slice(0,4);
+  const upcoming = S.orders.filter(o=>lastDay(o)>=todayISO && o.status!=="cancelled").sort((a,b)=>a.date.localeCompare(b.date)).slice(0,4);
   const reqs = S.orders.filter(o=>o.status==="inquiry").length;
   let h = "";
   if(!storageOK) h += '<div class="banner" style="background:var(--bad-soft)"><span>This browser does not allow saving (for example private mode). Your entries will not be kept.</span></div>';
@@ -754,7 +797,7 @@ function vHome(){
   h += '<section><h2>Coming up <small>'+(reqs?plural(reqs,"inquiry").replace("inquirys","inquiries"):'')+'</small></h2><div class="list">';
   if(upcoming.length){
     for(const o of upcoming){ const dd = toDate(o.date);
-      h += '<button class="row" data-act="open" data-id="'+o.id+'"><div class="datebox"><span class="d num">'+dd.getDate()+'</span><span class="m">'+MSHORT[dd.getMonth()]+'</span></div><div class="main"><span class="t">'+esc(o.title)+'</span><span class="s">'+inDays(daysUntil(o.date))+(o.guests?' · '+esc(o.guests)+' guests':'')+(o.location?' · '+esc(o.location):'')+'</span></div><div class="end">'+statusPill(o.status)+'</div></button>';
+      h += '<button class="row" data-act="open" data-id="'+o.id+'"><div class="datebox"><span class="d num">'+dd.getDate()+'</span><span class="m">'+MSHORT[dd.getMonth()]+'</span></div><div class="main"><span class="t">'+esc(o.title)+'</span><span class="s">'+(isMulti(o) && o.date<=todayISO ? 'running until '+fmtShort(o.endDate) : inDays(daysUntil(o.date))+(isMulti(o)?' · '+daysLabel(o):''))+(o.guests?' · '+esc(o.guests)+' guests':'')+(o.location?' · '+esc(o.location):'')+'</span></div><div class="end">'+statusPill(o.status)+'</div></button>';
     }
   } else h += '<div class="empty">No upcoming events.</div>';
   h += '</div></section>';
@@ -764,7 +807,7 @@ function vHome(){
 function vOrders(){
   const q = U.q.trim().toLowerCase();
   let list = S.orders.slice();
-  if(U.filter==="upcoming") list = list.filter(o=>o.date>=todayISO && o.status!=="cancelled");
+  if(U.filter==="upcoming") list = list.filter(o=>lastDay(o)>=todayISO && o.status!=="cancelled");
   else if(U.filter==="inquiry") list = list.filter(o=>o.status==="inquiry");
   else if(U.filter==="due") list = list.filter(o=>fin(o).open>0);
   else if(U.filter==="done") list = list.filter(o=>o.status==="done");
@@ -792,13 +835,13 @@ function vCal(){
   for(let i=0;i<cells;i++){
     const d = new Date(start); d.setDate(start.getDate()+i);
     const s = iso(d);
-    const evs = S.orders.filter(o=>o.date===s);
+    const evs = S.orders.filter(o=>onDay(o,s));
     h += '<button class="day'+(d.getMonth()!==m?' out':'')+(s===todayISO?' today':'')+'" data-act="day" data-d="'+s+'" aria-selected="'+(s===U.day)+'" aria-label="'+fmtLong(s)+(evs.length?', '+plural(evs.length,"event"):'')+'"><span>'+d.getDate()+'</span><span class="dots">'+evs.slice(0,3).map(o=>'<i class="dot '+o.status+'"></i>').join("")+'</span></button>';
   }
   h += '</div><div class="legend"><span><i class="dot inquiry"></i>Inquiry</span><span><i class="dot confirmed"></i>Confirmed</span><span><i class="dot done"></i>Done</span></div></section>';
-  const evs = S.orders.filter(o=>o.date===U.day);
+  const evs = S.orders.filter(o=>onDay(o,U.day));
   h += '<section><h2>'+fmtLong(U.day)+'</h2><div class="list">'+(evs.length?evs.map(orderRow).join(""):'<div class="empty">Free. <button class="copy" data-act="newOrderDay">Add an order on this day</button></div>')+'</div></section>';
-  const monthOrders = S.orders.filter(o=>ym(o.date)===mKey(U.cal)).sort((a,b)=>a.date.localeCompare(b.date));
+  const monthOrders = S.orders.filter(o=>ym(o.date)<=mKey(U.cal) && ym(lastDay(o))>=mKey(U.cal)).sort((a,b)=>a.date.localeCompare(b.date));
   h += '<section><h2>All events in '+MONTHS[m]+' <small>'+monthOrders.length+'</small></h2><div class="list">'+(monthOrders.length?monthOrders.map(orderRow).join(""):'<div class="empty">No events.</div>')+'</div></section>';
   return h;
 }
@@ -894,6 +937,11 @@ function wireCur(sh, id, onChange){
   return c => g.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.c===c)));
 }
 
+/* re-draw the open order sheet without the slide-in animation and at the same scroll position */
+function refreshOrder(id){
+  const old = root.querySelector(".sheet"), top = old ? old.scrollTop : 0;
+  sheetOrder(id); const sh = root.querySelector(".sheet"); if(sh){ sh.style.animation = "none"; sh.scrollTop = top; }
+}
 function sheetOrder(id){
   const o = byId(id); if(!o) return;
   const f = fin(o), c = o.currency, F = v => fmt(v,c);
@@ -901,7 +949,8 @@ function sheetOrder(id){
   const g = +o.guests>0 ? +o.guests : 0;
   const future = o.date > todayISO, dd = daysUntil(o.date);
   const txs = S.tx.filter(t=>t.orderId===o.id).sort((a,b)=>a.date.localeCompare(b.date));
-  const sub = fmtMed(o.date)+(o.time?' · '+esc(o.time):'')+' · '+esc(o.type);
+  const sub = rangeLabel(o)+(isMulti(o)?' · '+daysLabel(o):'')+(o.time?' · '+esc(o.time):'')+' · '+esc(o.type);
+  const running = isMulti(o) && o.date<=todayISO && lastDay(o)>=todayISO;
 
   const FLOW = ["inquiry","confirmed","done"];
   let top;
@@ -920,8 +969,12 @@ function sheetOrder(id){
     if(f.paid===0 && price>0){ nt="Deposit not received"; nx="Event "+inDays(dd)+". Record the deposit as soon as it arrives."; nb=payBtn("Record deposit","Deposit","",true); }
     else if(rest>0){ nt="Event "+inDays(dd); nx="Deposit received. Still due: <b>"+F(rest)+"</b>."; nb=payBtn("Record payment","Final payment",rest,true); }
     else { nt="Event "+inDays(dd); nx="Fully paid. Mark as done after the event."; nb=stBtn("Event is done","done",false); }
+  } else if(o.status==="confirmed" && running){
+    const k = orderDays(o).filter(x=>x<=todayISO).length;
+    nt = "Running until "+fmtShort(o.endDate); nx = "Day "+k+" of "+dayCount(o)+"."+(rest>0?" Still due: <b>"+F(rest)+"</b>.":" Fully paid.");
+    if(rest>0) nb = payBtn("Record payment", f.paid===0?"Deposit":"Final payment", f.paid===0?"":rest, true);
   } else if(o.status==="confirmed"){
-    nt = dd===0?"Event is today":"Event was on "+fmtShort(o.date);
+    nt = isMulti(o) ? "Ended on "+fmtShort(o.endDate) : dd===0?"Event is today":"Event was on "+fmtShort(o.date);
     nx = "When everything went well, mark it as done."+(rest>0?" Still due: <b>"+F(rest)+"</b>.":"");
     nb = stBtn("Event is done","done",true)+(rest>0?payBtn("Record payment","Final payment",rest,false):"");
   } else if(o.status==="done"){
@@ -940,11 +993,18 @@ function sheetOrder(id){
   const items = o.items||[];
   const svc = '<section><h2>Services <small>'+(items.length?plural(items.length,"item"):'')+'</small></h2>'+
     (items.length
-      ? '<div class="list">'+items.map(it=>'<button class="row" data-act="edititem" data-id="'+o.id+'" data-item="'+it.id+'"><div class="main"><span class="t">'+esc(it.name)+'</span><span class="s">'+qtyLabel(it)+(it.unit==="flat"&&it.qty===1?'':' × '+F(it.price))+'</span></div><div class="end"><span class="amt num">'+F(lineTotal(it,c))+'</span></div></button>').join("")+'</div>'+
+      ? '<div class="list">'+items.map(it=>'<button class="row" data-act="edititem" data-id="'+o.id+'" data-item="'+it.id+'"><div class="main"><span class="t">'+esc(it.name)+'</span><span class="s">'+qtyLabel(it,dayCount(o))+(it.unit==="flat"&&it.qty===1?'':' × '+F(it.price))+(it.daily&&it.unit!=="day"&&isMulti(o)?' · daily':'')+'</span></div><div class="end"><span class="amt num">'+F(lineTotal(it,c,dayCount(o)))+'</span></div></button>').join("")+'</div>'+
         '<dl class="kv num"><dt>Subtotal</dt><dd>'+F(itemsSum(o))+'</dd><dt><button class="copy" style="margin:0" data-act="discount" data-id="'+o.id+'">'+(o.discount?'Discount':'+ Add discount')+'</button></dt><dd>'+(o.discount?'− '+F(o.discount):'')+'</dd><div class="sep"></div><dt><b style="color:var(--ink)">Total</b></dt><dd><b>'+F(price)+'</b></dd></dl>'
       : '<div class="card"><p class="muted" style="margin:0">Add the services (buffet, staff, rental …). The price then adds up by itself, and they appear on the quote and invoice.</p></div>')+
     '<div class="btnrow"><button class="btn ghost" data-act="additem" data-id="'+o.id+'">+ Service</button><button class="btn ghost" data-act="doc" data-id="'+o.id+'">'+(o.status==="inquiry"?"Quote PDF":"Invoice PDF")+'</button></div></section>';
 
+  let days = "";
+  if(isMulti(o)){
+    const act = new Set(orderDays(o)); let cells = '<i></i>'.repeat((toDate(o.date).getDay()+1)%7);
+    for(let d = toDate(o.date), e = toDate(o.endDate); d <= e; d.setDate(d.getDate()+1)){ const k = iso(d), on = act.has(k);
+      cells += '<button class="dcell'+(on?' on':'')+(k===todayISO?' today':'')+'" data-act="toggleday" data-id="'+o.id+'" data-d="'+k+'" aria-pressed="'+on+'" aria-label="'+fmtLong(k)+'"><span>'+WEEK[(d.getDay()+1)%7]+'</span><b class="num">'+d.getDate()+'</b></button>'; }
+    days = '<section><h2>Days <small>'+daysLabel(o)+'</small></h2><div class="dgrid">'+cells+'</div><p class="hint">Tap a day to add or remove it, for example a holiday or an extra Friday. Services charged every day follow automatically.</p></section>';
+  }
   const profit = roundC(price - f.cost, c);
   const kg = '<dl class="kv num"><dt>Price</dt><dd>'+F(price)+'</dd><dt>Expenses</dt><dd>'+(f.cost?'− '+F(f.cost):F(0))+'</dd><div class="sep"></div>'+
     '<dt><b style="color:var(--ink)">Profit</b></dt><dd class="'+(profit<0?'neg-t':'pos')+'">'+F(profit)+(price&&f.cost?' <span class="muted" style="font-weight:500">· '+Math.round(profit/price*100)+'% margin</span>':'')+'</dd>'+
@@ -957,7 +1017,7 @@ function sheetOrder(id){
     (o.location?'<dt>Place</dt><dd>'+esc(o.location)+'</dd>':'')+(g?'<dt>Guests</dt><dd class="num">'+g+'</dd>':'')+
     (o.notes?'<dt style="grid-column:1/-1">Notes</dt><dd style="font-weight:500;text-align:left;grid-column:1/-1">'+esc(o.notes)+'</dd>':'')+'</dl>';
 
-  const body = '<p class="sub">'+sub+'</p>'+top+next+svc+
+  const body = '<p class="sub">'+sub+'</p>'+top+next+svc+days+
     '<section><h2>Payment</h2>'+pay+'</section>'+
     '<section><h2>Details</h2>'+det+'</section>'+
     '<section><h2>Costs &amp; profit</h2>'+kg+'</section>'+
@@ -968,15 +1028,17 @@ function sheetOrder(id){
 }
 
 function sheetOrderForm(id, presetDate){
-  const o = id? byId(id) : {title:"",type:"",date:presetDate||todayISO,time:"",customer:"",phone:"",location:"",guests:"",price:"",currency:main(),status:"inquiry",notes:""};
-  let c = o.currency;
+  const o = id? byId(id) : {title:"",type:"",date:presetDate||todayISO,endDate:"",weekdays:WD_DEFAULT.slice(),on:[],off:[],time:"",customer:"",phone:"",location:"",guests:"",price:"",currency:main(),status:"inquiry",notes:""};
+  let c = o.currency, multi = isMulti(o), wd = (o.weekdays||WD_DEFAULT).slice();
   const opt = (arr,v)=>arr.map(x=>'<option'+(x===v?' selected':'')+'>'+esc(x)+'</option>').join("");
   const body = '<form id="f-order" class="sheetform" novalidate><div class="formbody">'+
     '<div class="field"><label for="of-title">Name of the order</label><input id="of-title" required placeholder="e.g. Wedding Ahmed & Zainab" value="'+esc(o.title)+'"></div>'+
     '<div class="two"><div class="field"><label for="of-type">Occasion</label><select id="of-type" required><option value="" disabled'+(o.type?'':' selected')+'>Choose</option>'+opt(TYPES,o.type)+'</select></div>'+
     '<div class="field"><label for="of-status">Status</label><select id="of-status">'+Object.entries(STATUS).map(([k,l])=>'<option value="'+k+'"'+(o.status===k?' selected':'')+'>'+l+'</option>').join("")+'</select></div></div>'+
-    '<div class="two"><div class="field"><label for="of-date">Date</label><input id="of-date" type="date" required value="'+esc(o.date)+'"></div>'+
+    '<div class="two"><div class="field"><div class="lblrow"><label for="of-date" id="of-date-l">'+(multi?'From':'Date')+'</label><button type="button" class="linkbtn" id="of-multi" aria-expanded="'+multi+'">'+(multi?'One day':'Several days')+'</button></div><input id="of-date" type="date" required value="'+esc(o.date)+'"></div>'+
     '<div class="field"><label for="of-time">Time</label><input id="of-time" type="time" value="'+esc(o.time)+'"></div></div>'+
+    '<div class="range" id="of-range"'+(multi?'':' hidden')+'><div class="two pair"><div class="field"><label for="of-end">Until</label><input id="of-end" type="date" value="'+esc(o.endDate||"")+'"></div><div class="field"><label>Days</label><p class="rangeinfo num" id="of-count"></p></div></div>'+
+      '<div class="wdrow" id="of-wd" role="group" aria-label="Weekdays">'+WD_ORDER.map(n=>'<button type="button" data-wd="'+n+'" aria-pressed="'+wd.includes(n)+'">'+WEEK[(n+1)%7]+'</button>').join("")+'</div></div>'+
     '<div class="two"><div class="field"><label for="of-customer">Customer</label><input id="of-customer" autocomplete="off" value="'+esc(o.customer)+'"></div>'+
     '<div class="field"><label for="of-phone">Phone</label><input id="of-phone" type="tel" value="'+esc(o.phone)+'"></div></div>'+
     '<div class="two narrow-first"><div class="field"><label for="of-guests">Guests</label><input id="of-guests" type="text" inputmode="numeric" value="'+esc(o.guests)+'"></div>'+
@@ -995,6 +1057,20 @@ function sheetOrderForm(id, presetDate){
       convEl.textContent = v>0 ? "≈ "+fmt(conv(v,c,other),other)+" at $1 = IQD "+NF.IQD.format(S.settings.rate) : ""; };
     wireCur(sh,"of-cur",nc=>{ c=nc; upd(); });
     price.addEventListener("input",upd); upd();
+    /* several days: end date + weekdays, with a live count */
+    const $ = q => sh.querySelector(q);
+    const draft = () => ({date:$("#of-date").value, endDate: multi ? $("#of-end").value : "", weekdays: wd, on: o.on||[], off: o.off||[]});
+    const count = () => { if(!multi) return; const d = draft();
+      $("#of-count").textContent = isDate(d.date) && isDate(d.endDate) && d.endDate > d.date ? daysLabel(d)+(wd.includes(5)?"":" · no Fridays") : "Choose the end date"; };
+    $("#of-multi").addEventListener("click", () => {
+      multi = !multi; $("#of-range").hidden = !multi; $("#of-multi").textContent = multi ? "One day" : "Several days"; $("#of-multi").setAttribute("aria-expanded", String(multi));
+      $("#of-date-l").textContent = multi ? "From" : "Date";
+      if(multi && !$("#of-end").value && isDate($("#of-date").value)){ const e = toDate($("#of-date").value); e.setDate(e.getDate()+13); $("#of-end").value = iso(e); }
+      count(); if(multi) $("#of-range").scrollIntoView({block:"nearest"});
+    });
+    sh.querySelectorAll("#of-wd button").forEach(b => b.addEventListener("click", () => {
+      const n = +b.dataset.wd; wd = wd.includes(n) ? wd.filter(x=>x!==n) : wd.concat(n); b.setAttribute("aria-pressed", String(wd.includes(n))); count(); }));
+    ["#of-date","#of-end"].forEach(q => $(q).addEventListener("change", count)); count();
     sh.querySelector("#f-order").addEventListener("submit",e=>{
       e.preventDefault();
       const v = k=>sh.querySelector("#of-"+k).value;
@@ -1003,12 +1079,23 @@ function sheetOrderForm(id, presetDate){
       if(!v("title").trim()) return fail("Please give the order a name.");
       if(!v("type")) return fail("Please choose the occasion.");
       if(!isDate(v("date"))) return fail("Please choose a date.");
+      if(multi){
+        if(!isDate(v("end")) || v("end") <= v("date")) return fail("The end date must be after the start date.");
+        if((toDate(v("end")) - toDate(v("date")))/864e5 > 366) return fail("Please keep it to one year at most.");
+        if(!wd.length) return fail("Please choose at least one weekday.");
+        if(!dayCount(draft())) return fail("No days left in this period. Check the weekdays.");
+      }
       const p = fromItems ? o.price : (v("price").trim()==="" ? 0 : parseAmount(v("price"),c));
       if(isNaN(p)) return fail("The price is not a valid number. Example: "+(c==="IQD"?"2,500,000":"2,450"));
       const guests = v("guests").trim();
       if(guests && !/^\d+$/.test(parseAmount(guests,"IQD")+"")) return fail("Guests must be a whole number.");
-      const data = {title:v("title").trim(),type:v("type"),status:v("status"),date:v("date"),time:v("time"),customer:v("customer").trim(),phone:v("phone").trim(),guests:guests?String(parseAmount(guests,"IQD")):"",location:v("location").trim(),price:p,currency:c,notes:v("notes").trim()};
-      if(id){ Object.assign(o,data); } else { Object.assign(data,{items:[],discount:0,invoiceNo:"",quoteNo:""}); data.id=uid(); S.orders.push(data); id=data.id; }
+      const data = {title:v("title").trim(),type:v("type"),status:v("status"),date:v("date"),time:v("time"),customer:v("customer").trim(),phone:v("phone").trim(),guests:guests?String(parseAmount(guests,"IQD")):"",location:v("location").trim(),price:p,currency:c,notes:v("notes").trim(),
+        endDate: multi ? v("end") : "", weekdays: multi ? wd.slice().sort() : WD_DEFAULT.slice()};
+      const keep = a => multi ? (a||[]).filter(k => k >= data.date && k <= data.endDate) : [];
+      data.on = keep(o.on); data.off = keep(o.off);
+      if(id){ const wasMulti = isMulti(o); Object.assign(o,data);
+        if(wasMulti && !isMulti(o)) (o.items||[]).forEach(it => { if(it.unit==="day") it.qty = 1; });   /* per-day services: one day again */
+        syncPrice(o); } else { Object.assign(data,{items:[],discount:0,invoiceNo:"",quoteNo:""}); data.id=uid(); S.orders.push(data); id=data.id; }
       save(); render(); sheetOrder(id); toast("Saved");
     });
   });
@@ -1062,9 +1149,9 @@ function sheetTxForm(txId, kind, orderId, preset){
   });
 }
 
-function qtyLabel(it){
-  const n = NF.plain.format(it.qty);
-  return {guest: n+" guests", person: n+(it.qty===1?" person":" persons"), pcs: n+" pcs", flat: it.qty===1?"flat rate":n+" × flat rate"}[it.unit] || n;
+function qtyLabel(it, days){
+  const q = effQty(it, days), n = NF.plain.format(q);
+  return {guest: n+" guests", person: n+(q===1?" person":" persons"), day: n+(q===1?" day":" days"), pcs: n+" pcs", flat: q===1?"flat rate":n+" × flat rate"}[it.unit] || n;
 }
 /* one form for a service: on an order (orderId) or in the price list (orderId = null) */
 function sheetItem(orderId, itemId, catId){
@@ -1090,6 +1177,7 @@ function sheetItem(orderId, itemId, catId){
     '<div class="two"><div class="field"><label for="it-unit">Charged</label><select id="it-unit">'+unitOpts+'</select></div>'+
     (o ? '<div class="field"><label for="it-qty">Quantity</label><input id="it-qty" type="text" inputmode="decimal" value="'+esc(NF.plain.format(it.qty))+'"></div>' : '<div></div>')+'</div>'+
     priceField+
+    (o && isMulti(o) ? '<label class="checkrow" id="it-daily-row"><input type="checkbox" id="it-daily"'+((src ? src.daily : true)?' checked':'')+'> Every day ('+daysLabel(o)+')</label>' : '')+
     (o && !src ? '<label class="checkrow"><input type="checkbox" id="it-save"> Also add to my price list</label>' : '')+
     (o && !src && !(o.items||[]).length && o.price>0 ? '<p class="hint">From now on the order price is the sum of its services (currently '+fmt(o.price,c)+').</p>' : '')+
     '<p class="err" id="it-err" hidden></p></div>'+
@@ -1100,7 +1188,9 @@ function sheetItem(orderId, itemId, catId){
     const upd = () => {
       if(!o) return;
       const unit = $("#it-unit").value, q = parseAmount($("#it-qty").value,"USD"), pr = parseAmount($("#it-price").value,c);
-      $("#it-total").textContent = q>0 && pr>=0 && !isNaN(pr) ? "= "+fmt(roundC(q*pr,c),c)+(unit==="guest"&&guests&&q!==guests?" · the order has "+guests+" guests":"") : "";
+      const nd = $("#it-daily") && $("#it-daily").checked && unit!=="day" ? dayCount(o) : 1;
+      const follows = unit==="day" && isMulti(o) ? " · quantity follows the days of the order" : "";
+      $("#it-total").textContent = q>0 && pr>=0 && !isNaN(pr) ? (nd>1 ? "= "+fmt(roundC(q*pr,c),c)+" a day · "+fmt(roundC(q*pr*nd,c),c)+" for "+plural(nd,"day") : "= "+fmt(roundC(q*pr,c),c))+(unit==="guest"&&guests&&q!==guests?" · the order has "+guests+" guests":"")+follows : "";
     };
     /* dictionary: fill empty translation fields from known terms (and back to English) */
     /* dictionary: fill translation fields from known terms (whole term or word by word; back to English only for whole terms).
@@ -1128,13 +1218,25 @@ function sheetItem(orderId, itemId, catId){
     sh.querySelectorAll("#it-cat .chip").forEach(b=>b.addEventListener("click",()=>{
       const x = S.catalog.find(k=>k.id===b.dataset.cid); if(!x) return;
       $("#it-name").value = x.name; $("#it-ar").value = x.nameAr||""; $("#it-ku").value = x.nameKu||""; $("#it-unit").value = x.unit;
-      $("#it-qty").value = NF.plain.format(x.unit==="guest" && guests ? guests : 1);
+      $("#it-qty").value = NF.plain.format(x.unit==="guest" && guests ? guests : 1); syncUnit();
       $("#it-price").value = fmtInput(catPrice(x, c), c);
       $("#it-dict").textContent = "";
       sh.querySelectorAll("#it-cat .chip").forEach(k=>k.setAttribute("aria-pressed", String(k===b))); upd();
     }));
-    $("#it-unit").addEventListener("change",()=>{ if(o && $("#it-unit").value==="guest" && guests) $("#it-qty").value = NF.plain.format(guests); if(o && $("#it-unit").value==="flat") $("#it-qty").value = "1"; upd(); });
-    ["#it-qty","#it-price"].forEach(q=>{ const el=$(q); if(el) el.addEventListener("input",upd); }); upd();
+    /* per day: on a multi-day order the quantity is the number of days (locked); elsewhere it is typed in */
+    function syncUnit(){
+      if(!o) return;
+      const perDay = $("#it-unit").value==="day", multiDay = isMulti(o), q = $("#it-qty");
+      q.readOnly = perDay && multiDay;
+      if(perDay && multiDay) q.value = NF.plain.format(dayCount(o));
+      if($("#it-daily-row")) $("#it-daily-row").hidden = perDay;
+    }
+    $("#it-unit").addEventListener("change",()=>{ const u = $("#it-unit").value;
+      if(o && u==="guest" && guests) $("#it-qty").value = NF.plain.format(guests);
+      if(o && (u==="flat" || (u==="day" && !isMulti(o)))) $("#it-qty").value = "1";
+      syncUnit(); upd(); });
+    syncUnit();
+    ["#it-qty","#it-price"].forEach(q=>{ const el=$(q); if(el) el.addEventListener("input",upd); }); if($("#it-daily")) $("#it-daily").addEventListener("change",upd); upd();
     $("#f-item").addEventListener("submit",e=>{
       e.preventDefault();
       const err = $("#it-err"), fail = m => { err.textContent = m; err.hidden = false; };
@@ -1144,7 +1246,7 @@ function sheetItem(orderId, itemId, catId){
       if(o){
         const qty = parseAmount($("#it-qty").value,"USD"); if(!(qty>0)) return fail("Quantity must be above 0.");
         const price = parseAmount($("#it-price").value,c); if(isNaN(price)) return fail("Please enter the price per unit. Example: "+(c==="IQD"?"35,000":"22"));
-        Object.assign(data, {qty, price});
+        Object.assign(data, {qty, price, daily: data.unit!=="day" && !!($("#it-daily") && $("#it-daily").checked)});
         if(src) Object.assign(src, data); else { if(!o.items) o.items=[]; o.items.push({id:uid(), ...data}); }
         if($("#it-save") && $("#it-save").checked && !S.catalog.some(x=>x.name.toLowerCase()===name.toLowerCase()))
           S.catalog.push({id:uid(), name, nameAr:data.nameAr, nameKu:data.nameKu, unit:data.unit, prices:{USD: c==="USD"?price:null, IQD: c==="IQD"?price:null}});
@@ -1189,9 +1291,9 @@ function docData(o, kind, cur, take, lang){
   const field = kind==="invoice" ? "invoiceNo" : "quoteNo";
   let number = o[field];
   if(!number){ number = docNumber(kind, take); if(take){ o[field] = number; save(); } }
-  const cv = v => roundC(conv(v, o.currency, cur), cur);
+  const cv = v => roundC(conv(v, o.currency, cur), cur), nDays = dayCount(o);
   const lines = (o.items && o.items.length)
-    ? o.items.map(it => { const price = cv(it.price); return {name:it.name, nameAr:it.nameAr, nameKu:it.nameKu, unit:it.unit, qty:it.qty, price, total:roundC(it.qty*price, cur)}; })
+    ? o.items.map(it => { const price = cv(it.price), days = dayMult(it, nDays); return {name:it.name, nameAr:it.nameAr, nameKu:it.nameKu, unit:it.unit, qty:effQty(it, nDays), days, price, total:roundC(it.qty*price*days, cur)}; })
     : [{name:(o.type==="Other"?"Catering":o.type+" catering")+(+o.guests>0?" for "+o.guests+" guests":""), nameAr:DOC_L.ar.catering+" – "+(TYPES_AR[o.type]||"مناسبة"), nameKu:DOC_L.ku.catering+" – "+(TYPES_KU[o.type]||"بۆنە"), unit:"flat", qty:1, price:cv(o.price), total:cv(o.price)}];
   const subtotal = roundC(lines.reduce((a,l)=>a+l.total,0), cur);
   const discount = (o.items && o.items.length) ? Math.min(subtotal, cv(o.discount||0)) : 0;
@@ -1259,7 +1361,8 @@ async function renderDoc(d){
   if(o.phone){ T(o.phone, M, ly, {s:9.5, c:P.muted}); ly += 13; }
   ctx.font = "700 11px "+BODY; for(const l of wrapText(ctx, o.title, W-M-c2)){ T(l, c2, ry, {s:11, w:700}); ry += 14; }
   T(o.type, c2, ry, {s:9.5, c:P.muted}); if(L) A(L.types[o.type]||"", W-M, ry, {s:9.5, c:P.muted}); ry += 13;
-  T(fmtLong(o.date)+(o.time?", "+o.time:""), c2, ry, {s:9.5, c:P.muted}); ry += 13;
+  T(rangeLabel(o, true)+(o.time?", "+o.time:""), c2, ry, {s:9.5, c:P.muted}); ry += 13;
+  if(isMulti(o)){ const n = dayCount(o); T(plural(n,"service day"), c2, ry, {s:9.5, c:P.muted}); if(L) A(L.days+": "+n, W-M, ry, {s:9.5, c:P.muted}); ry += 13; }
   if(o.location){ T(o.location, c2, ry, {s:9.5, c:P.muted}); ry += 13; }
   if(+o.guests>0){ T(o.guests+" guests", c2, ry, {s:9.5, c:P.muted}); if(L) A(L.guests+": "+o.guests, W-M, ry, {s:9.5, c:P.muted}); ry += 13; }
   y = Math.max(ly, ry) + 16;
@@ -1285,8 +1388,8 @@ async function renderDoc(d){
     if(y + rowH > LIMIT){ newPage(); y = M; contHead(); head(); }
     let yy = y + 12;
     for(const t of nl){ T(t, X.dL, yy, {s:10.5, w:600}); yy += 13; }
-    T(UNITS[l.unit] ? UNITS[l.unit].en : "", X.dL, yy, {s:8.5, c:P.muted}); A(tr(l), X.dR, yy, {s:9.5, c:P.muted});
-    T(NF.plain.format(l.qty), X.q, y+12, {s:10, a:"right"});
+    T((UNITS[l.unit] ? UNITS[l.unit].en : "")+(l.days>1 ? " · "+l.days+" days" : ""), X.dL, yy, {s:8.5, c:P.muted}); A(tr(l), X.dR, yy, {s:9.5, c:P.muted});
+    T(NF.plain.format(l.qty)+(l.days>1 ? " × "+l.days : ""), X.q, y+12, {s:10, a:"right"});
     T(money(l.price), X.u, y+12, {s:10, a:"right"});
     T(money(l.total), X.a, y+12, {s:10, w:700, a:"right"});
     y += rowH; rule(y-6, P.line, 0.6);
@@ -1499,6 +1602,13 @@ document.addEventListener("click",e=>{
   if(a==="editorder") return sheetOrderForm(id);
   if(a==="newtx") return sheetTxForm(null, el.dataset.kind, id||null, {cat:el.dataset.cat||"", amount:el.dataset.amount?+el.dataset.amount:""});
   if(a==="edittx") return sheetTxForm(id);
+  if(a==="toggleday"){ const o=byId(id), k=el.dataset.d; if(!o || !isMulti(o)) return;
+    const was = orderDays(o).includes(k);
+    const on = new Set(o.on||[]), off = new Set(o.off||[]);
+    if(was){ if(on.has(k)) on.delete(k); else off.add(k); } else { if(off.has(k)) off.delete(k); else on.add(k); }
+    const before = {on:o.on, off:o.off}; o.on = [...on].sort(); o.off = [...off].sort();
+    if(!dayCount(o)){ Object.assign(o, before); return toast("At least one day must stay"); }
+    syncPrice(o); save(); render(); refreshOrder(id); return; }
   if(a==="setstatus"){ const o=byId(id); o.status=el.dataset.s; save(); render(); sheetOrder(id); return toast({confirmed:"Order confirmed",done:"Marked as done",cancelled:"Order cancelled",inquiry:"Reopened as inquiry"}[o.status]); }
   if(a==="delorder") return arm(el,"Really delete? Tap again",()=>{ S.orders=S.orders.filter(o=>o.id!==id); S.tx=S.tx.filter(t=>t.orderId!==id); save(); closeSheet(); render(); toast("Order deleted"); });
   if(a==="deltx") return arm(el,"Really delete? Tap again",()=>{ const t=S.tx.find(x=>x.id===id); S.tx=S.tx.filter(x=>x.id!==id); save(); render(); if(t&&t.orderId) sheetOrder(t.orderId); else closeSheet(); toast("Entry deleted"); });
