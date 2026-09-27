@@ -283,6 +283,12 @@ form.sheetform{display:flex;flex-direction:column;gap:0;min-height:0;flex:1 1 au
 .pricerow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
 .hint{margin:0;font-size:var(--fs-sub);color:var(--muted)}
 .rate{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:600}
+.txrate{margin-top:8px;font-size:var(--fs-sub);color:var(--muted)}
+.txrate label{flex:1 1 100%;font-weight:600}
+.txrate input{flex:1;min-width:0}
+.txrate[hidden]{display:none}
+.mixnote{display:flex;flex-direction:column;gap:2px;font-size:var(--fs-sub);color:var(--ink);margin-top:10px}
+.mixnote .muted{font-size:var(--fs-label)}
 .rate input{width:130px;border:1px solid var(--line);background:var(--surface);border-radius:11px;padding:10px 12px;font-size:var(--fs-body)}
 
 /* ---- Élysée brand layer ---- */
@@ -484,7 +490,9 @@ function fmt(v,c){
 /* short amounts for chart labels: 648 · 1.0K · 2.5K · 12K · 992M */
 function shortNum(a){ if(a<1000) return NF.IQD.format(Math.round(a)); const [u,suf]=a>=1e9?[1e9,"B"]:a>=1e6?[1e6,"M"]:[1e3,"K"]; const n=a/u; return (n<10?n.toFixed(1):String(Math.round(n)))+suf; }
 function fmtCompact(v,c,bare){ const a=Math.abs(v); const s = shortNum(a); if(bare) return (v<0?"−":"")+(c==="IQD"?s:"$"+s); return (v<0?"−":"+")+(c==="IQD"?"IQD "+s:"$"+s); }
-function conv(v,from,to){ if(from===to) return v; const r=S.settings.rate; return from==="USD" ? v*r : v/r; }
+function conv(v,from,to,rate){ if(from===to) return v; const r=rate||S.settings.rate; return from==="USD" ? v*r : v/r; }
+/* a payment or expense is converted at the rate of the day it was recorded, so past months don't shift when the rate changes */
+const convT = (t, to) => conv(t.amount, t.currency, to, t.rate);
 const main = () => S.settings.main;
 const M = v => fmt(v, main());
 /* Accepts "1,250.50", "1250", "1250.5", "1,250,000", "250.000" (IQD), "$1,250", Arabic-Indic digits */
@@ -530,9 +538,10 @@ function normalize(d){
   if(!d.v && d.sample) return seed();                         // old German sample data → fresh English sample
   const str = v => v==null ? "" : String(v);
   const st = d.settings||{};
-  const settings = {main: CUR[st.main]?st.main:"USD", rate: Number(st.rate)>0 ? Number(st.rate) : DEFAULT_RATE, lastBackup: isDate(st.lastBackup) ? st.lastBackup : "", theme: ["light","dark"].includes(st.theme) ? st.theme : "system",
+  const settings = {main: CUR[st.main] ? st.main : "USD", rate: Number(st.rate)>0 ? Number(st.rate) : DEFAULT_RATE, lastBackup: isDate(st.lastBackup) ? st.lastBackup : "", theme: ["light","dark"].includes(st.theme) ? st.theme : "system",
     business: normBusiness(st.business), seq: {inv: Object.assign({}, st.seq && st.seq.inv), q: Object.assign({}, st.seq && st.seq.q)}};
-  const cur = c => CUR[c] ? c : settings.main;
+  const legacyMain = CUR[st.main] ? st.main : "USD";   /* very old data without currency per order was in dollars */
+  const cur = c => CUR[c] ? c : legacyMain;
   const orders = d.orders.filter(o=>o && isDate(o.date)).map(o=>{
     const c = cur(o.currency);
     const status = STATUS[o.status] ? o.status : (LEGACY.status[o.status]||"inquiry");
@@ -552,7 +561,7 @@ function normalize(d){
       const c = CUR[t.currency] ? t.currency : (orderId ? oc.get(orderId) : settings.main);
       const cats = t.kind==="in" ? CAT_IN : CAT_OUT;
       const category = cats.includes(t.category) ? t.category : (LEGACY.cat[t.category] && cats.includes(LEGACY.cat[t.category]) ? LEGACY.cat[t.category] : (str(t.category)||cats[cats.length-1]));
-      return {id:str(t.id)||uid(), orderId, kind:t.kind, category, amount:roundC(Number(t.amount),c), currency:c, date:t.date, note:str(t.note)};
+      return {id:str(t.id)||uid(), orderId, kind:t.kind, category, amount:roundC(Number(t.amount),c), currency:c, rate: Number(t.rate)>0 ? Number(t.rate) : settings.rate, date:t.date, note:str(t.note)};
     });
   const catalog = Array.isArray(d.catalog) ? d.catalog.filter(x=>x && str(x.name).trim()).map(x=>{
       const pr = {USD:null, IQD:null};
@@ -618,7 +627,7 @@ function catPriceLabel(x){ return ["IQD","USD"].filter(c=>x.prices[c]!=null).map
 function seed(){
   const o = (id,title,type,date,time,customer,phone,location,guests,price,currency,status,notes,items)=>({id,title,type,date,time,customer,phone,location,guests,price,currency,status,notes,
     items:(items||[]).map(([name,nameAr,unit,qty,price])=>({id:uid(),name,nameAr,nameKu:(GLOSSARY.find(g=>g[0]===name)||[])[2]||"",unit,qty,price})), discount:0, invoiceNo:"", quoteNo:""});
-  const t = (orderId,kind,category,amount,currency,date,note)=>({id:uid(),orderId,kind,category,amount,currency,date,note:note||""});
+  const t = (orderId,kind,category,amount,currency,date,note)=>({id:uid(),orderId,kind,category,amount,currency,rate:DEFAULT_RATE,date,note:note||""});
   return {
     v:VERSION, sample:true, settings:{main:"USD", rate:DEFAULT_RATE, lastBackup:"", theme:"system", business:normBusiness({}), seq:{inv:{},q:{}}}, catalog: seedCatalog(),
     orders:[
@@ -721,7 +730,7 @@ const byId = id => S.orders.find(o=>o.id===id);
 function fin(o){
   let paid=0,cost=0,mixed=false;
   for(const t of S.tx){ if(t.orderId!==o.id) continue; if(t.currency!==o.currency) mixed=true;
-    const v = conv(t.amount,t.currency,o.currency); if(t.kind==="in") paid+=v; else cost+=v; }
+    const v = convT(t,o.currency); if(t.kind==="in") paid+=v; else cost+=v; }
   paid = roundC(paid,o.currency); cost = roundC(cost,o.currency);
   const billable = o.status==="confirmed"||o.status==="done";
   const rest = Math.max(0, roundC((o.price||0)-paid, o.currency));
@@ -756,10 +765,10 @@ function orderRow(o){
     '<div class="end"><span class="amt num">'+fmt(o.price||0,o.currency)+'</span>'+(o.status==="inquiry"||o.status==="cancelled"?statusPill(o.status):payPill(o,f))+'</div></button>';
 }
 function monthTotals(key){
-  let inc=0,out=0;
-  for(const t of S.tx){ if(ym(t.date)!==key) continue; const v=conv(t.amount,t.currency,main()); if(t.kind==="in") inc+=v; else out+=v; }
+  let inc=0,out=0; const raw = {USD:{inc:0,out:0}, IQD:{inc:0,out:0}};
+  for(const t of S.tx){ if(ym(t.date)!==key) continue; const v=convT(t,main()); if(t.kind==="in") inc+=v; else out+=v; raw[t.currency][t.kind==="in"?"inc":"out"] += t.amount; }
   inc=roundC(inc,main()); out=roundC(out,main());
-  return {inc,out,profit:roundC(inc-out,main())};
+  return {inc,out,profit:roundC(inc-out,main()),raw};
 }
 const K = v => { const t = M(v); return t.includes("IQD\u00a0") ? '<span class="cc">IQD</span> '+t.replace("IQD\u00a0","") : t; };
 function kpis(tt){
@@ -768,10 +777,13 @@ function kpis(tt){
     '<div class="kpi"><span class="label">Expenses</span><b class="num">'+K(tt.out)+'</b></div>'+
     '<div class="kpi profit'+(tt.profit<0?' neg':'')+'"><span class="label">Profit this month</span><b class="num">'+K(tt.profit)+'</b></div></div>';
 }
-function mixedNote(){
-  const other = main()==="USD"?"IQD":"USD";
-  if(!S.orders.some(o=>o.currency===other) && !S.tx.some(t=>t.currency===other)) return "";
-  return '<p class="hint">Totals in '+(main()==="USD"?"US dollars":"Iraqi dinar")+' · IQD converted at $1 = IQD '+NF.IQD.format(S.settings.rate)+' <button class="copy" data-act="data">Change</button></p>';
+/* what the month's totals are made of, per currency, so nothing is hidden in a conversion */
+function mixedNote(tt){
+  const m = main(), other = m==="USD"?"IQD":"USD", r = tt.raw;
+  if(!r[other].inc && !r[other].out) return "";
+  const part = k => [m, other].filter(c=>r[c][k]).map(c=>'<b class="num">'+fmt(roundC(r[c][k],c),c)+'</b>').join(" + ") || '<b class="num">'+fmt(0,m)+'</b>';
+  return '<div class="mixnote"><span>Income '+part("inc")+'</span><span>Expenses '+part("out")+'</span>'+
+    '<span class="muted">'+(other==="USD"?"Dollars":"Dinar")+' converted at the rate of each entry. <button class="copy" data-act="data">Currency</button></span></div>';
 }
 
 /* ---------- views ---------- */
@@ -785,7 +797,7 @@ function vHome(){
   if(!storageOK) h += '<div class="banner" style="background:var(--bad-soft)"><span>This browser does not allow saving (for example private mode). Your entries will not be kept.</span></div>';
   if(S.sample) h += '<div class="banner"><span>This is sample data to try things out.</span><button data-act="clearsample">Clear &amp; start</button></div>';
   if(backupDue()) h += '<div class="banner" id="backup-banner"><span>'+(S.settings.lastBackup?'Last backup '+Math.abs(daysUntil(S.settings.lastBackup))+' days ago.':'No backup yet.')+' Your orders live only on this phone.</span><button data-act="backup">Save backup</button></div>';
-  h += '<section>'+monthBar("month")+kpis(tt)+mixedNote()+'</section>';
+  h += '<section>'+monthBar("month")+kpis(tt)+mixedNote(tt)+'</section>';
   h += '<section><h2>Payments due <small>'+plural(openOrders.length,"order")+'</small></h2><div class="list">';
   if(openOrders.length){
     h += '<div class="openbox"><span class="label" style="color:var(--bad)">Still to collect</span><b class="num">'+M(openSum)+'</b></div>';
@@ -849,7 +861,7 @@ function vCal(){
 function vFin(){
   const key = mKey(U.finMonth);
   const tt = monthTotals(key);
-  let h = '<section>'+monthBar("finMonth")+kpis(tt)+mixedNote()+'</section>';
+  let h = '<section>'+monthBar("finMonth")+kpis(tt)+mixedNote(tt)+'</section>';
   const months=[]; for(let i=5;i>=0;i--){ const a=shiftM(U.finMonth,-i); months.push({a,t:monthTotals(mKey(a))}); }
   const max = Math.max(1,...months.map(x=>Math.max(x.t.inc,x.t.out)));
   const pct = v => (v/max*100).toFixed(1);
@@ -857,7 +869,7 @@ function vFin(){
   months.forEach((x,i)=>{ ch+='<div class="col'+(i===5?' now':'')+'"><i class="bin" style="height:'+pct(x.t.inc)+'%"></i><i class="bout" style="height:'+pct(x.t.out)+'%"></i></div>'; });
   ch+='</div><div class="xlab">'+months.map((x,i)=>'<div'+(i===5?' class="now"':'')+'><span>'+MSHORT[x.a[1]]+'</span><span class="num '+(x.t.profit<0?'neg-t':'pos')+'">'+(x.t.inc||x.t.out?esc(fmtCompact(x.t.profit,main(),true)):'&nbsp;')+'</span></div>').join("")+'</div></div>';
   h += '<section><h2>Last 6 months <small><span class="key in"></span>Income <span class="key out"></span>Expenses</small></h2><div class="chartbox">'+ch+'</div></section>';
-  const cats={}; for(const t of S.tx){ if(t.kind!=="out"||ym(t.date)!==key) continue; cats[t.category]=(cats[t.category]||0)+conv(t.amount,t.currency,main()); }
+  const cats={}; for(const t of S.tx){ if(t.kind!=="out"||ym(t.date)!==key) continue; cats[t.category]=(cats[t.category]||0)+convT(t,main()); }
   const ce=Object.entries(cats).sort((a,b)=>b[1]-a[1]); const cmax=Math.max(1,...ce.map(c=>c[1]));
   h += '<section><h2>Expenses by category</h2><div class="bars">'+(ce.length?ce.map(([c,v])=>'<div class="bar"><span>'+esc(c)+'</span><div class="track"><div class="fill" style="width:'+(v/cmax*100).toFixed(1)+'%"></div></div><span class="num">'+M(v)+'</span></div>').join(""):'<div class="empty">No expenses this month.</div>')+'</div></section>';
   const mo = S.orders.filter(o=>ym(o.date)===key && (o.status==="confirmed"||o.status==="done")).sort((a,b)=>a.date.localeCompare(b.date));
@@ -1009,7 +1021,7 @@ function sheetOrder(id){
   const kg = '<dl class="kv num"><dt>Price</dt><dd>'+F(price)+'</dd><dt>Expenses</dt><dd>'+(f.cost?'− '+F(f.cost):F(0))+'</dd><div class="sep"></div>'+
     '<dt><b style="color:var(--ink)">Profit</b></dt><dd class="'+(profit<0?'neg-t':'pos')+'">'+F(profit)+(price&&f.cost?' <span class="muted" style="font-weight:500">· '+Math.round(profit/price*100)+'% margin</span>':'')+'</dd>'+
     (g&&price?'<dt>Price per guest</dt><dd>'+F(price/g)+'</dd>':'')+(g&&f.cost?'<dt>Cost per guest</dt><dd>'+F(f.cost/g)+'</dd>':'')+'</dl>'+
-    (f.mixed?'<p class="hint">Entries in the other currency are converted at $1 = IQD '+NF.IQD.format(S.settings.rate)+'.</p>':'')+
+    (f.mixed?'<p class="hint">Entries in the other currency are converted at the rate of each entry.</p>':'')+
     (f.cost?'':'<p class="hint">No expenses recorded yet. Add food, staff etc. under Entries below to see the real profit.</p>');
 
   const det = '<dl class="kv"><dt>Customer</dt><dd>'+esc(o.customer||"–")+'</dd>'+
@@ -1104,13 +1116,14 @@ function sheetOrderForm(id, presetDate){
 function sheetTxForm(txId, kind, orderId, preset){
   preset = preset||{};
   const ord0 = orderId ? byId(orderId) : null;
-  const t = txId? S.tx.find(x=>x.id===txId) : {kind:kind||"out",category:preset.cat||"",amount:preset.amount||"",currency:ord0?ord0.currency:main(),date:todayISO,orderId:orderId||null,note:""};
+  const t = txId? S.tx.find(x=>x.id===txId) : {kind:kind||"out",category:preset.cat||"",amount:preset.amount||"",currency:ord0?ord0.currency:main(),rate:S.settings.rate,date:todayISO,orderId:orderId||null,note:""};
   let k = t.kind, c = t.currency, curTouched = !!txId;
   const orders = S.orders.slice().sort((a,b)=>b.date.localeCompare(a.date));
   const catOpts = kk=>(kk==="in"?CAT_IN:CAT_OUT).map(x=>'<option'+(x===t.category?' selected':'')+'>'+esc(x)+'</option>').join("");
   const body = '<form id="f-tx" class="sheetform" novalidate><div class="formbody">'+
     '<div class="seg"><button type="button" data-k="in" aria-pressed="'+(k==="in")+'">Money in</button><button type="button" data-k="out" aria-pressed="'+(k==="out")+'">Money out</button></div>'+
-    '<div class="field"><label for="tf-amount">Amount</label><div class="pricerow"><input id="tf-amount" type="text" inputmode="decimal" autocomplete="off" value="'+esc(fmtInput(t.amount,c))+'">'+curToggle("tf-cur",c)+'</div><p class="hint" id="tf-conv"></p></div>'+
+    '<div class="field"><label for="tf-amount">Amount</label><div class="pricerow"><input id="tf-amount" type="text" inputmode="decimal" autocomplete="off" value="'+esc(fmtInput(t.amount,c))+'">'+curToggle("tf-cur",c)+'</div><p class="hint" id="tf-conv"></p>'+
+      '<div class="rate txrate" id="tf-ratebox" hidden><label for="tf-rate">Rate for this entry</label><span>$1 = IQD</span><input id="tf-rate" type="text" inputmode="numeric" value="'+NF.IQD.format(t.rate||S.settings.rate)+'"></div></div>'+
     '<div class="two"><div class="field"><label for="tf-date">Date</label><input id="tf-date" type="date" required value="'+esc(t.date)+'"></div>'+
     '<div class="field"><label for="tf-cat">Category</label><select id="tf-cat">'+catOpts(k)+'</select></div></div>'+
     '<div class="field"><label for="tf-order">Belongs to order</label><select id="tf-order"><option value="">No order (general)</option>'+orders.map(o=>'<option value="'+o.id+'"'+(o.id===t.orderId?' selected':'')+'>'+esc(o.title)+' · '+fmtShort(o.date)+'</option>').join("")+'</select></div>'+
@@ -1122,12 +1135,13 @@ function sheetTxForm(txId, kind, orderId, preset){
     const amt = sh.querySelector("#tf-amount"), convEl = sh.querySelector("#tf-conv"), ordSel = sh.querySelector("#tf-order");
     const upd = () => {
       amt.placeholder = c==="IQD" ? "e.g. 650,000" : "e.g. 450";
-      const v = parseAmount(amt.value,c), o = byId(ordSel.value), target = o ? o.currency : main();
-      convEl.textContent = v>0 && target!==c ? "≈ "+fmt(conv(v,c,target),target)+(o?" on this order":"")+" at $1 = IQD "+NF.IQD.format(S.settings.rate) : "";
+      const v = parseAmount(amt.value,c), o = byId(ordSel.value), target = o ? o.currency : main(), r = parseAmount(sh.querySelector("#tf-rate").value,"IQD");
+      sh.querySelector("#tf-ratebox").hidden = target===c && main()===c;
+      convEl.textContent = v>0 && target!==c && r>0 ? "≈ "+fmt(conv(v,c,target,r),target)+(o?" on this order":"") : "";
     };
     const setCur = wireCur(sh,"tf-cur",nc=>{ c=nc; curTouched=true; upd(); });
     ordSel.addEventListener("change",()=>{ const o=byId(ordSel.value); if(!curTouched){ c = o?o.currency:main(); setCur(c); } upd(); });
-    amt.addEventListener("input",upd); upd();
+    amt.addEventListener("input",upd); sh.querySelector("#tf-rate").addEventListener("input",upd); upd();
     sh.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>{
       k=b.dataset.k; sh.querySelectorAll(".seg button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
       sh.querySelector("#tf-cat").innerHTML=catOpts(k);
@@ -1140,7 +1154,9 @@ function sheetTxForm(txId, kind, orderId, preset){
       const amount = parseAmount(v("amount"),c);
       if(!(amount>0)){ err.textContent="Please enter an amount above 0. Example: "+(c==="IQD"?"650,000":"450"); err.hidden=false; return; }
       if(!isDate(v("date"))){ err.textContent="Please choose a date."; err.hidden=false; return; }
-      const data = {kind:k,amount,currency:c,date:v("date"),category:v("cat"),orderId:v("order")||null,note:v("note").trim()};
+      const rate = parseAmount(v("rate"),"IQD");
+      if(!(rate>0)){ err.textContent="Please enter the exchange rate as a number, e.g. 1,590."; err.hidden=false; return; }
+      const data = {kind:k,amount,currency:c,rate,date:v("date"),category:v("cat"),orderId:v("order")||null,note:v("note").trim()};
       if(txId) Object.assign(t,data); else { data.id=uid(); S.tx.push(data); }
       save(); render();
       if(data.orderId) sheetOrder(data.orderId); else closeSheet();
@@ -1298,7 +1314,7 @@ function docData(o, kind, cur, take, lang){
   const subtotal = roundC(lines.reduce((a,l)=>a+l.total,0), cur);
   const discount = (o.items && o.items.length) ? Math.min(subtotal, cv(o.discount||0)) : 0;
   const total = roundC(subtotal - discount, cur);
-  let paid = 0; for(const t of S.tx) if(t.orderId===o.id && t.kind==="in") paid += conv(t.amount, t.currency, cur);
+  let paid = 0; for(const t of S.tx) if(t.orderId===o.id && t.kind==="in") paid += convT(t, cur);
   paid = roundC(paid, cur);
   return {kind, lang: DOC_L[lang] ? lang : "", number, date:todayISO, validUntil:iso(new Date(toDate(todayISO).getTime()+14*864e5)), cur, converted:cur!==o.currency, from:o.currency, rate:S.settings.rate,
     order:o, lines, subtotal, discount, total, paid: kind==="invoice" ? Math.min(paid,total) : 0, balance: kind==="invoice" ? Math.max(0, roundC(total-paid,cur)) : total, biz:S.settings.business};
@@ -1552,7 +1568,7 @@ function sheetData(focus){
     '<section><h2>Currency</h2>'+
     '<div class="field"><label>Show totals in</label><div class="seg" id="set-main"><button type="button" data-c="USD" aria-pressed="'+(m==="USD")+'">US dollar ($)</button><button type="button" data-c="IQD" aria-pressed="'+(m==="IQD")+'">Iraqi dinar (IQD)</button></div></div>'+
     '<div class="field"><label for="set-rate">Exchange rate</label><div class="rate"><span>$1 =</span><span>IQD</span><input id="set-rate" type="text" inputmode="numeric" value="'+NF.IQD.format(S.settings.rate)+'"><button class="btn ghost" data-act="saverate" style="padding:10px 14px">Save</button></div>'+
-    '<p class="hint">Each order and entry keeps its own currency. This rate is only used to add dollars and dinars together in totals. Update it when the market rate changes.</p></div></section>'+
+    '<p class="hint">Each order and entry keeps its own currency. New payments and expenses take this rate and keep it, so past months stay as they were. Update it when the market rate changes.</p></div></section>'+
     '<section><h2>Backup</h2>'+
     '<p class="muted" style="margin:0">Everything is saved only on this device. Save a backup regularly, for example to Files, iCloud Drive or WhatsApp. '+(S.settings.lastBackup?'Last backup: '+fmtShort(S.settings.lastBackup)+'.':'No backup yet.')+'</p>'+
     '<button class="btn ghost" data-act="backup">Save backup</button>'+
