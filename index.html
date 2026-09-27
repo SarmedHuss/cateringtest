@@ -183,6 +183,8 @@ button.row:active{background:var(--surface-2)}
 .p-good{background:var(--good-soft);color:var(--good)}
 .p-warn{background:var(--saffron-soft);color:var(--saffron)}
 .p-bad{background:var(--bad-soft);color:var(--bad)}
+.row.flagrow{background:color-mix(in srgb,var(--bad-soft) 55%,transparent);box-shadow:inset 3px 0 0 var(--bad)}
+.overcard{border:1.5px solid var(--bad)}
 .pos{color:var(--good)} .neg-t{color:var(--bad)}
 
 .openbox{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px;background:var(--bad-soft);border-radius:14px 14px 0 0}
@@ -337,7 +339,7 @@ const KEY = "catering-auftragsbuch-v1";
 const VERSION = 2;
 const STATUS = {inquiry:"Inquiry", confirmed:"Confirmed", done:"Done", cancelled:"Cancelled"};
 const TYPES = ["Wedding","Engagement","Birthday","Graduation","Corporate event","Condolence (Fatiha)","Religious occasion","Other"];
-const CAT_IN = ["Deposit","Final payment","Payment","Other income"];
+const CAT_IN = ["Deposit","Final payment","Payment","Tip","Other income"];
 const CAT_OUT = ["Food","Drinks","Staff","Equipment & rental","Transport","Fixed costs","Other"];
 const UNITS = {guest:{en:"per guest",ar:"لكل ضيف",ku:"بۆ هەر میوانێک"}, person:{en:"per person",ar:"لكل شخص",ku:"بۆ هەر کەسێک"}, day:{en:"per day",ar:"لكل يوم",ku:"بۆ هەر ڕۆژێک"}, pcs:{en:"pcs",ar:"قطعة",ku:"دانە"}, flat:{en:"flat rate",ar:"مبلغ مقطوع",ku:"بڕی دیاریکراو"}};
 const TYPES_AR = {"Wedding":"زفاف","Engagement":"خطوبة","Birthday":"عيد ميلاد","Graduation":"حفل تخرج","Corporate event":"مناسبة شركة","Condolence (Fatiha)":"مجلس عزاء","Religious occasion":"مناسبة دينية","Other":"مناسبة"};
@@ -729,16 +731,30 @@ const emptyState = () => ({v:VERSION, sample:false, settings:{...S.settings}, or
 
 const byId = id => S.orders.find(o=>o.id===id);
 /* all figures of an order in the order's own currency */
+/* a tip is extra money on top of the price: it counts as income, but not towards what the customer owes */
+const isTip = t => t.kind==="in" && t.category==="Tip";
+const TOL = {USD:1, IQD:1000};   /* rounding slack before a payment counts as "more than due" */
 function fin(o){
-  let paid=0,cost=0,mixed=false;
+  let paid=0,cost=0,tips=0,mixed=false;
   for(const t of S.tx){ if(t.orderId!==o.id) continue; if(t.currency!==o.currency) mixed=true;
-    const v = convT(t,o.currency); if(t.kind==="in") paid+=v; else cost+=v; }
-  paid = roundC(paid,o.currency); cost = roundC(cost,o.currency);
+    const v = convT(t,o.currency); if(isTip(t)) tips+=v; else if(t.kind==="in") paid+=v; else cost+=v; }
+  paid = roundC(paid,o.currency); cost = roundC(cost,o.currency); tips = roundC(tips,o.currency);
   const billable = o.status==="confirmed"||o.status==="done";
   const rest = Math.max(0, roundC((o.price||0)-paid, o.currency));
-  return {paid, cost, rest, open: billable?rest:0, mixed};
+  const over = o.price>0 && paid - o.price > TOL[o.currency] ? roundC(paid - o.price, o.currency) : 0;
+  return {paid, cost, tips, rest, open: billable?rest:0, over, mixed};
 }
+/* payments that push an order above its price (tips excluded): these get marked so a typo like 17,500 instead of 1,750 stands out */
+function overpaidTx(){
+  const ids = new Set();
+  for(const o of S.orders){ if(!(o.price>0)) continue;
+    const ins = S.tx.filter(t=>t.orderId===o.id && t.kind==="in" && !isTip(t)).sort((a,b)=>a.date.localeCompare(b.date));
+    let sum = 0; for(const t of ins){ sum += convT(t,o.currency); if(sum - o.price > TOL[o.currency]) ids.add(t.id); } }
+  return ids;
+}
+let OVER = new Set();
 function payPill(o,f){
+  if(f.over>0) return '<span class="pill p-bad">Overpaid</span>';
   if(o.status==="inquiry"||o.status==="cancelled") return "";
   if(o.price>0 && f.rest===0) return '<span class="pill p-good">Paid</span>';
   if(f.paid>0) return '<span class="pill p-warn">'+fmt(f.open,o.currency)+' due</span>';
@@ -799,6 +815,8 @@ function vHome(){
   if(!storageOK) h += '<div class="banner" style="background:var(--bad-soft)"><span>This browser does not allow saving (for example private mode). Your entries will not be kept.</span></div>';
   if(S.sample) h += '<div class="banner"><span>This is sample data to try things out.</span><button data-act="clearsample">Clear &amp; start</button></div>';
   if(backupDue()) h += '<div class="banner" id="backup-banner"><span>'+(S.settings.lastBackup?'Last backup '+Math.abs(daysUntil(S.settings.lastBackup))+' days ago.':'No backup yet.')+' Your orders live only on this phone.</span><button data-act="backup">Save backup</button></div>';
+  const overs = S.orders.filter(o=>fin(o).over>0);
+  if(overs.length) h += '<div class="banner" id="over-banner" style="background:var(--bad-soft)"><span>'+(overs.length===1?'<b>'+esc(overs[0].title)+'</b> has':'<b>'+overs.length+' orders</b> have')+' payments above the price. Please check.</span><button data-act="open" data-id="'+overs[0].id+'">Check</button></div>';
   h += '<section>'+monthBar("month")+kpis(tt)+mixedNote(tt)+'</section>';
   h += '<section><h2>Payments due <small>'+plural(openOrders.length,"order")+'</small></h2><div class="list">';
   if(openOrders.length){
@@ -888,12 +906,14 @@ function vFin(){
 }
 function txRow(t){
   const o = t.orderId? byId(t.orderId):null;
-  return '<button class="row" data-act="edittx" data-id="'+t.id+'"><div class="main"><span class="t">'+esc(t.category)+(t.note?' <span class="muted" style="font-weight:400">· '+esc(t.note)+'</span>':'')+'</span><span class="s">'+fmtShort(t.date)+' · '+(o?esc(o.title):'General')+'</span></div><div class="end"><span class="amt num '+(t.kind==="in"?'pos':'')+'">'+(t.kind==="in"?'+':'−')+fmt(t.amount,t.currency)+'</span></div></button>';
+  const flag = OVER.has(t.id);
+  return '<button class="row'+(flag?' flagrow':'')+'" data-act="edittx" data-id="'+t.id+'"><div class="main"><span class="t">'+esc(t.category)+(t.note?' <span class="muted" style="font-weight:400">· '+esc(t.note)+'</span>':'')+'</span><span class="s">'+fmtShort(t.date)+' · '+(o?esc(o.title):'General')+'</span></div><div class="end"><span class="amt num '+(t.kind==="in"?'pos':'')+'">'+(t.kind==="in"?'+':'−')+fmt(t.amount,t.currency)+'</span>'+(flag?'<span class="pill p-bad">More than due</span>':'')+'</div></button>';
 }
 
 /* ---------- render ---------- */
 const view = document.getElementById("view");
 function render(){
+  OVER = overpaidTx();
   document.getElementById("apptitle").textContent = {home:"Order Book",orders:"Orders",cal:"Calendar",fin:"Money"}[U.tab];
   view.innerHTML = ({home:vHome,orders:vOrders,cal:vCal,fin:vFin}[U.tab])();
   document.querySelectorAll("#tabs button").forEach(b=>{ if(b.dataset.tab===U.tab) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
@@ -1004,10 +1024,12 @@ function sheetOrder(id){
 
   let pay;
   if(price<=0) pay = '<div class="card"><p class="muted" style="margin:0">No price agreed yet. <button class="copy" data-act="editorder" data-id="'+o.id+'">Add price</button></p></div>';
+  else if(f.over>0) pay = '<div class="card overcard"><div class="payhead"><span><b class="num">'+F(f.paid)+'</b> <span class="muted">of '+F(price)+' paid</span></span><span class="num neg-t" style="font-weight:700">'+F(f.over)+' too much</span></div>'+
+      '<p class="hint" style="color:var(--bad)">The payments are more than the price. Check the marked entry below: maybe a typo. If the customer gave extra, change its category to <b>Tip</b>.</p></div>';
   else { const pct = Math.min(100, f.paid/price*100);
     pay = '<div class="card"><div class="payhead"><span><b class="num">'+F(f.paid)+'</b> <span class="muted">of '+F(price)+' paid</span></span><span class="num '+(rest>0?'neg-t':'pos')+'" style="font-weight:700">'+(rest>0?F(rest)+' due':'✓ fully paid')+'</span></div>'+
       '<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+Math.round(pct)+'"><i style="width:'+pct.toFixed(1)+'%"></i></div>'+
-      (o.status==="inquiry"?'<p class="hint">Quoted price. Becomes binding once the customer says yes.</p>':'')+'</div>'; }
+      (f.tips?'<p class="hint">Plus '+F(f.tips)+' tip.</p>':'')+(o.status==="inquiry"?'<p class="hint">Quoted price. Becomes binding once the customer says yes.</p>':'')+'</div>'; }
 
   const items = o.items||[];
   const svc = '<section><h2>Services <small>'+(items.length?plural(items.length,"item"):'')+'</small></h2>'+
@@ -1149,6 +1171,8 @@ function sheetTxForm(txId, kind, orderId, preset){
     const setCur = wireCur(sh,"tf-cur",nc=>{ c=nc; curTouched=true; upd(); });
     ordSel.addEventListener("change",()=>{ const o=byId(ordSel.value); if(!curTouched){ c = o?o.currency:main(); setCur(c); } upd(); });
     amt.addEventListener("input",upd); sh.querySelector("#tf-rate").addEventListener("input",upd); upd();
+    let overOK = null; const saveBtn = sh.querySelector('#f-tx button[type=submit]'), saveLabel = saveBtn.textContent;
+    sh.querySelector("#f-tx").addEventListener("input", () => { if(overOK){ overOK = null; saveBtn.textContent = saveLabel; sh.querySelector("#tf-err").hidden = true; } });
     sh.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>{
       k=b.dataset.k; sh.querySelectorAll(".seg button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
       sh.querySelector("#tf-cat").innerHTML=catOpts(k);
@@ -1164,6 +1188,19 @@ function sheetTxForm(txId, kind, orderId, preset){
       const rate = parseAmount(v("rate"),"IQD");
       if(!(rate>0)){ err.textContent="Please enter the exchange rate as a number, e.g. 1,590."; err.hidden=false; return; }
       const data = {kind:k,amount,currency:c,rate,date:v("date"),category:v("cat"),orderId:v("order")||null,note:v("note").trim()};
+      /* payment above what is still due on the order → ask once before saving (a tip is fine) */
+      const ord = data.orderId ? byId(data.orderId) : null;
+      if(ord && k==="in" && data.category!=="Tip" && ord.price>0){
+        let others = 0; for(const x of S.tx) if(x.orderId===ord.id && x.kind==="in" && !isTip(x) && x.id!==txId) others += convT(x, ord.currency);
+        const due = Math.max(0, roundC(ord.price - others, ord.currency)), mine = conv(amount, c, ord.currency, rate);
+        const sig = [amount, c, rate, data.orderId, data.category].join("|");
+        if(mine - due > TOL[ord.currency] && overOK !== sig){
+          overOK = sig; saveBtn.textContent = "Save anyway";
+          err.innerHTML = (due>0 ? "This is more than the <b>"+fmt(due,ord.currency)+"</b> still due on this order" : "This order is already fully paid")+
+            (due>0 && due<ord.price ? " (price "+fmt(ord.price,ord.currency)+")" : "")+". Please check the amount. If the customer gave extra, choose the category <b>Tip</b>.";
+          err.hidden = false; return;
+        }
+      }
       if(txId) Object.assign(t,data); else { data.id=uid(); S.tx.push(data); }
       save(); render();
       if(data.orderId) sheetOrder(data.orderId); else closeSheet();
@@ -1321,7 +1358,7 @@ function docData(o, kind, cur, take, lang){
   const subtotal = roundC(lines.reduce((a,l)=>a+l.total,0), cur);
   const discount = (o.items && o.items.length) ? Math.min(subtotal, cv(o.discount||0)) : 0;
   const total = roundC(subtotal - discount, cur);
-  let paid = 0; for(const t of S.tx) if(t.orderId===o.id && t.kind==="in") paid += convT(t, cur);
+  let paid = 0; for(const t of S.tx) if(t.orderId===o.id && t.kind==="in" && !isTip(t)) paid += convT(t, cur);
   paid = roundC(paid, cur);
   return {kind, lang: DOC_L[lang] ? lang : "", number, date:todayISO, validUntil:iso(new Date(toDate(todayISO).getTime()+14*864e5)), cur, converted:cur!==o.currency, from:o.currency, rate:S.settings.rate,
     order:o, lines, subtotal, discount, total, paid: kind==="invoice" ? Math.min(paid,total) : 0, balance: kind==="invoice" ? Math.max(0, roundC(total-paid,cur)) : total, biz:S.settings.business};
