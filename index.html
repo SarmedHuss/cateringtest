@@ -189,6 +189,7 @@ button.row:active{background:var(--surface-2)}
 .openbox b{font-family:var(--body);font-weight:700;font-size:var(--fs-h2);color:var(--bad)}
 
 .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.chips.more{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent)}
 .chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:var(--fs-sub);font-weight:600;white-space:nowrap;color:var(--muted)}
 .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 .search{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;font-size:var(--fs-body)}
@@ -231,7 +232,9 @@ button.row:active{background:var(--surface-2)}
 nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:repeat(4,1fr)}
 nav.tabs button{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:var(--fs-label);font-weight:600;color:var(--muted);padding:4px 0}
 nav.tabs svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-nav.tabs button[aria-current="page"]{color:var(--accent)}
+nav.tabs svg{box-sizing:content-box;padding:4px 18px;border-radius:999px;transition:background .15s}
+nav.tabs button[aria-current="page"]{color:var(--ink);font-weight:700}
+nav.tabs button[aria-current="page"] svg{background:var(--accent-soft);stroke-width:2.1}
 .fab{position:fixed;right:16px;bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:7;width:56px;height:56px;border-radius:18px;border:0;background:var(--accent);color:var(--accent-ink);font-size:30px;line-height:1;box-shadow:0 6px 18px rgba(14,107,90,.35)}
 @media (min-width:680px){.fab{right:calc(50% - 320px + 16px)}}
 
@@ -305,8 +308,7 @@ h2{font-weight:600;letter-spacing:.005em}
 .next .label::after{margin:0 0 2px 8px}
 .kpi.profit .label{color:var(--accent-ink);opacity:.75}
 .fab{box-shadow:var(--fab-shadow);border-radius:50%}
-nav.tabs button[aria-current="page"]{color:var(--brass)}
-nav.tabs button[aria-current="page"] svg{stroke-width:2.1}
+nav.tabs button[aria-current="page"]{color:var(--ink)}
 .step.done i{background:var(--brass-line)}
 .step.now{color:var(--brass)}
 .day.today > span:first-child{background:var(--accent);color:var(--accent-ink)}
@@ -828,7 +830,7 @@ function vOrders(){
   list.sort((a,b)=> desc ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date));
   const chip = (k,l)=>'<button class="chip" data-act="filter" data-f="'+k+'" aria-pressed="'+(U.filter===k)+'">'+l+'</button>';
   let h = '<section><input class="search" id="q" type="search" placeholder="Search name, place, occasion …" value="'+esc(U.q)+'">'+
-    '<div class="chips">'+chip("upcoming","Upcoming")+chip("inquiry","Inquiries")+chip("due","Payment due")+chip("done","Done")+chip("all","All")+'</div></section>';
+    '<div class="chips">'+chip("upcoming","Upcoming")+chip("inquiry","Inquiries")+chip("due","Due")+chip("done","Done")+chip("all","All")+'</div></section>';
   if(!list.length) return h+'<div class="list"><div class="empty">No orders in this view.</div></div>';
   let cur="", buf="";
   const flush=()=>{ if(buf){ h+='<section class="grouphead"><span class="label">'+cur+'</span><div class="list">'+buf+'</div></section>'; buf=""; } };
@@ -865,7 +867,7 @@ function vFin(){
   const months=[]; for(let i=5;i>=0;i--){ const a=shiftM(U.finMonth,-i); months.push({a,t:monthTotals(mKey(a))}); }
   const max = Math.max(1,...months.map(x=>Math.max(x.t.inc,x.t.out)));
   const pct = v => (v/max*100).toFixed(1);
-  let ch='<div class="chart" role="img" aria-label="Income and expenses, last 6 months"><span class="chartmax num">'+esc(M(max))+'</span><div class="plot">';
+  let ch='<div class="chart" role="img" aria-label="Income and expenses, last 6 months"><span class="chartmax num">'+esc(fmtCompact(max,main(),true))+'</span><div class="plot">';
   months.forEach((x,i)=>{ ch+='<div class="col'+(i===5?' now':'')+'"><i class="bin" style="height:'+pct(x.t.inc)+'%"></i><i class="bout" style="height:'+pct(x.t.out)+'%"></i></div>'; });
   ch+='</div><div class="xlab">'+months.map((x,i)=>'<div'+(i===5?' class="now"':'')+'><span>'+MSHORT[x.a[1]]+'</span><span class="num '+(x.t.profit<0?'neg-t':'pos')+'">'+(x.t.inc||x.t.out?esc(fmtCompact(x.t.profit,main(),true)):'&nbsp;')+'</span></div>').join("")+'</div></div>';
   h += '<section><h2>Last 6 months <small><span class="key in"></span>Income <span class="key out"></span>Expenses</small></h2><div class="chartbox">'+ch+'</div></section>';
@@ -895,6 +897,11 @@ function render(){
   document.getElementById("apptitle").textContent = {home:"Order Book",orders:"Orders",cal:"Calendar",fin:"Money"}[U.tab];
   view.innerHTML = ({home:vHome,orders:vOrders,cal:vCal,fin:vFin}[U.tab])();
   document.querySelectorAll("#tabs button").forEach(b=>{ if(b.dataset.tab===U.tab) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
+  /* filter chips: fade the right edge while more chips are hidden; keep the chosen one in view */
+  const ch = view.querySelector(".chips");
+  if(ch){ const sel = ch.querySelector('[aria-pressed="true"]');
+    if(sel && sel.offsetLeft + sel.offsetWidth > ch.scrollLeft + ch.clientWidth) ch.scrollLeft = sel.offsetLeft + sel.offsetWidth - ch.clientWidth + 8;
+    const f = () => ch.classList.toggle("more", ch.scrollLeft + ch.clientWidth < ch.scrollWidth - 2); f(); ch.addEventListener("scroll", f, {passive:true}); }
   const q = document.getElementById("q");
   if(q) q.addEventListener("input",()=>{ U.q=q.value; const pos=q.selectionStart; render(); const n=document.getElementById("q"); n.focus(); try{n.setSelectionRange(pos,pos);}catch(e){} });
 }
