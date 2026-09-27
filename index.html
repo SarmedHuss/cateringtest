@@ -185,6 +185,8 @@ button.row:active{background:var(--surface-2)}
 .p-bad{background:var(--bad-soft);color:var(--bad)}
 .row.flagrow{background:color-mix(in srgb,var(--bad-soft) 55%,transparent);box-shadow:inset 3px 0 0 var(--bad)}
 .overcard{border:1.5px solid var(--bad)}
+.datehint{margin-top:-4px}
+.datehint b{color:var(--ink)}
 .pos{color:var(--good)} .neg-t{color:var(--bad)}
 
 .openbox{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px;background:var(--bad-soft);border-radius:14px 14px 0 0}
@@ -1153,8 +1155,9 @@ function sheetTxForm(txId, kind, orderId, preset){
     '<div class="seg"><button type="button" data-k="in" aria-pressed="'+(k==="in")+'">Money in</button><button type="button" data-k="out" aria-pressed="'+(k==="out")+'">Money out</button></div>'+
     '<div class="field"><label for="tf-amount">Amount</label><div class="pricerow"><input id="tf-amount" type="text" inputmode="decimal" autocomplete="off" value="'+esc(fmtInput(t.amount,c))+'">'+curToggle("tf-cur",c)+'</div><p class="hint" id="tf-conv"></p>'+
       '<div class="rate txrate" id="tf-ratebox" hidden><label for="tf-rate">Rate for this entry</label><span>$1 = IQD</span><input id="tf-rate" type="text" inputmode="numeric" value="'+NF.IQD.format(t.rate||S.settings.rate)+'"></div></div>'+
-    '<div class="two"><div class="field"><label for="tf-date">Date</label><input id="tf-date" type="date" required value="'+esc(t.date)+'"></div>'+
+    '<div class="two"><div class="field"><label for="tf-date" id="tf-date-l">'+(k==="in"?"Date paid":"Date spent")+'</label><input id="tf-date" type="date" required value="'+esc(t.date)+'"></div>'+
     '<div class="field"><label for="tf-cat">Category</label><select id="tf-cat">'+catOpts(k)+'</select></div></div>'+
+    '<p class="hint datehint" id="tf-datehint" hidden></p>'+
     '<div class="field"><label for="tf-order">Belongs to order</label><select id="tf-order"><option value="">No order (general)</option>'+orders.map(o=>'<option value="'+o.id+'"'+(o.id===t.orderId?' selected':'')+'>'+esc(o.title)+' · '+fmtShort(o.date)+'</option>').join("")+'</select></div>'+
     '<div class="field"><label for="tf-note">Note</label><input id="tf-note" placeholder="e.g. Jameela market, 3 helpers" value="'+esc(t.note)+'"></div>'+
     '<p class="err" id="tf-err" hidden></p></div>'+
@@ -1171,11 +1174,18 @@ function sheetTxForm(txId, kind, orderId, preset){
     const setCur = wireCur(sh,"tf-cur",nc=>{ c=nc; curTouched=true; upd(); });
     ordSel.addEventListener("change",()=>{ const o=byId(ordSel.value); if(!curTouched){ c = o?o.currency:main(); setCur(c); } upd(); });
     amt.addEventListener("input",upd); sh.querySelector("#tf-rate").addEventListener("input",upd); upd();
+    /* date: filled with today; when the entry belongs to an event in the past, offer its date with one tap */
+    const dEl = sh.querySelector("#tf-date"), dHint = sh.querySelector("#tf-datehint");
+    const dateHint = () => { const o = byId(ordSel.value), d = dEl.value;
+      if(o && o.date < todayISO && d !== o.date){ dHint.innerHTML = (d===todayISO ? "Date is <b>today</b>. " : "")+"Event was on "+fmtShort(o.date)+". <button type=\"button\" class=\"copy\" id=\"tf-evday\">Use "+fmtShort(o.date)+"</button>";
+        dHint.hidden = false; dHint.querySelector("#tf-evday").onclick = () => { dEl.value = o.date; dateHint(); }; }
+      else dHint.hidden = true; };
+    dEl.addEventListener("change", dateHint); ordSel.addEventListener("change", dateHint); dateHint();
     let overOK = null; const saveBtn = sh.querySelector('#f-tx button[type=submit]'), saveLabel = saveBtn.textContent;
     sh.querySelector("#f-tx").addEventListener("input", () => { if(overOK){ overOK = null; saveBtn.textContent = saveLabel; sh.querySelector("#tf-err").hidden = true; } });
     sh.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>{
       k=b.dataset.k; sh.querySelectorAll(".seg button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
-      sh.querySelector("#tf-cat").innerHTML=catOpts(k);
+      sh.querySelector("#tf-cat").innerHTML=catOpts(k); sh.querySelector("#tf-date-l").textContent = k==="in"?"Date paid":"Date spent";
       if(!txId) sh.querySelector("h3").textContent = k==="in"?"Record payment":"Record expense";
     }));
     sh.querySelector("#f-tx").addEventListener("submit",e=>{
