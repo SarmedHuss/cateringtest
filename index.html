@@ -255,6 +255,10 @@ nav.tabs button[aria-current="page"] svg{background:var(--accent-soft);stroke-wi
 .sheethead h3{font-family:var(--display);font-size:var(--fs-h2);margin:0;text-wrap:balance}
 .close{border:0;background:var(--surface-2);border-radius:999px;width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0}
 .close svg{width:14px;height:14px;display:block}
+.scrim.confirmscrim{z-index:25;align-items:center;padding:24px;background:rgba(10,16,14,.4)}
+.confirm{background:var(--bg);width:100%;max-width:340px;border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:10px;box-shadow:0 12px 40px rgba(0,0,0,.28)}
+.confirm h3{font-family:var(--display);font-size:var(--fs-h2);margin:0}
+.confirm p{margin:0 0 4px;color:var(--muted)}
 form{display:flex;flex-direction:column;gap:8px}
 .sheetform{display:flex;flex-direction:column;gap:0;min-height:0;flex:1 1 auto}
 .sheet:has(.sheetform){overflow:hidden}
@@ -988,8 +992,19 @@ const root = document.getElementById("sheet-root");
 function openSheet(title, body, after){
   root.innerHTML = '<div class="scrim" data-act="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="'+esc(title)+'"><div class="grab"></div><div class="sheethead"><h3>'+esc(title)+'</h3><button class="close" data-act="close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>'+body+'</div></div>';
   if(after) after(root.querySelector(".sheet"));
+  sheetSnap = formSnap(root.querySelector(".sheet"));
 }
-function closeSheet(){ root.innerHTML=""; }
+function closeSheet(){ root.innerHTML=""; sheetSnap = null; }
+/* a form with entries is not closed by accident: swipe, tap outside, × and Escape ask first. An untouched form closes at once. */
+let sheetSnap = null;
+const formSnap = sh => JSON.stringify([...sh.querySelectorAll("input,select,textarea")].map(e => e.type==="checkbox" || e.type==="radio" ? e.checked : e.value));
+function isDirty(){ const sh = root.querySelector(".sheet"); return !!(sh && sheetSnap!==null && sh.querySelector("form.sheetform") && formSnap(sh)!==sheetSnap); }
+function askDiscard(){
+  if(root.querySelector(".confirmscrim")) return;
+  root.insertAdjacentHTML("beforeend", '<div class="scrim confirmscrim" data-act="keep"><div class="confirm" role="alertdialog" aria-modal="true" aria-labelledby="cf-t"><h3 id="cf-t">Discard this entry?</h3><p>Everything you typed here will be lost.</p><button class="btn" id="cf-keep" data-act="keep">Keep editing</button><button class="btn danger" data-act="discard">Discard</button></div></div>');
+  const k = root.querySelector("#cf-keep"); if(k){ try{ k.focus({preventScroll:true}); }catch(e){} }
+}
+function requestClose(){ if(isDirty()) askDiscard(); else closeSheet(); }
 /* swipe down to close: from the top of the sheet, or anywhere once its content is scrolled to the top */
 (function(){
   let d = null;
@@ -998,14 +1013,14 @@ function closeSheet(){ root.innerHTML=""; }
     const sh = e.target.closest(".sheet"); if(!sh || e.touches.length !== 1) return;
     if(e.target.closest("textarea, select, input[type=range]")) return;
     const sc = scroller(e.target);
-    d = { sh, sc, scrim: sh.parentElement, y0: e.touches[0].clientY, x0: e.touches[0].clientX, t0: Date.now(), dy: 0, on: false, head: !!e.target.closest(".grab, .sheethead") };
+    d = { sh, sc, form: !!sh.querySelector("form.sheetform"), scrim: sh.parentElement, y0: e.touches[0].clientY, x0: e.touches[0].clientX, t0: Date.now(), dy: 0, on: false, head: !!e.target.closest(".grab, .sheethead") };
   }, { passive: true });
   root.addEventListener("touchmove", e => {
     if(!d) return;
     const dy = e.touches[0].clientY - d.y0, dx = e.touches[0].clientX - d.x0;
     if(!d.on){
       if(Math.abs(dy) < 8 && Math.abs(dx) < 8) return;
-      if(dy > 0 && Math.abs(dy) > Math.abs(dx) && (d.head || d.sc.scrollTop <= 0)){ d.on = true; d.sh.style.transition = "none"; d.sh.style.animation = "none"; if(document.activeElement && document.activeElement.blur) document.activeElement.blur(); }
+      if(dy > 0 && Math.abs(dy) > Math.abs(dx) && (d.head || (!d.form && d.sc.scrollTop <= 0))){ d.on = true; d.sh.style.transition = "none"; d.sh.style.animation = "none"; if(document.activeElement && document.activeElement.blur) document.activeElement.blur(); }
       else { d = null; return; }
     }
     d.dy = Math.max(0, dy);
@@ -1017,7 +1032,8 @@ function closeSheet(){ root.innerHTML=""; }
     if(!d) return; const x = d; d = null; if(!x.on) return;
     const v = x.dy / Math.max(1, Date.now() - x.t0);
     x.sh.style.transition = "transform .22s ease-out";
-    if(x.dy > 120 || (v > 0.5 && x.dy > 40)){ x.sh.style.transform = "translateY(100%)"; x.scrim.style.transition = "background-color .22s"; x.scrim.style.backgroundColor = "rgba(10,16,14,0)"; setTimeout(closeSheet, 200); }
+    if((x.dy > 120 || (v > 0.5 && x.dy > 40)) && isDirty()){ x.sh.style.transform = ""; x.scrim.style.backgroundColor = ""; askDiscard(); }
+    else if(x.dy > 120 || (v > 0.5 && x.dy > 40)){ x.sh.style.transform = "translateY(100%)"; x.scrim.style.transition = "background-color .22s"; x.scrim.style.backgroundColor = "rgba(10,16,14,0)"; setTimeout(closeSheet, 200); }
     else { x.sh.style.transform = ""; x.scrim.style.backgroundColor = ""; }
   };
   root.addEventListener("touchend", end); root.addEventListener("touchcancel", end);
@@ -1727,8 +1743,10 @@ document.addEventListener("click",e=>{
   if(tabBtn){ U.tab=tabBtn.dataset.tab; try{localStorage.setItem(KEY+":tab",U.tab);}catch(err){} render(); window.scrollTo(0,0); return; }
   const el = e.target.closest("[data-act]"); if(!el) return;
   const a = el.dataset.act, id = el.dataset.id;
-  if(a==="scrim"){ if(e.target===el) closeSheet(); return; }
-  if(a==="close") return closeSheet();
+  if(a==="scrim"){ if(e.target===el) requestClose(); return; }
+  if(a==="close") return requestClose();
+  if(a==="keep"){ if(el.classList.contains("confirmscrim") && e.target!==el) return; const c = root.querySelector(".confirmscrim"); if(c) c.remove(); return; }
+  if(a==="discard") return closeSheet();
   if(a==="mprev"||a==="mnext"){ U[el.dataset.w]=shiftM(U[el.dataset.w],a==="mprev"?-1:1); if(el.dataset.w==="cal"){ const c=U.cal; U.day=c[0]+"-"+pad(c[1]+1)+"-01"; } return render(); }
   if(a==="open") return sheetOrder(id);
   if(a==="filter"){ U.filter=el.dataset.f; return render(); }
@@ -1768,7 +1786,7 @@ document.addEventListener("click",e=>{
   if(a==="backup"){ exportBackup(); return; }
   if(a==="import"){ try{ importText(document.getElementById("imp").value); }catch(err){ toast("That is not a valid backup"); } return; }
 });
-document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeSheet(); });
+document.addEventListener("keydown",e=>{ if(e.key!=="Escape") return; const c = root.querySelector(".confirmscrim"); if(c) c.remove(); else requestClose(); });
 document.addEventListener("input",e=>{ const t=e.target; if(t.tagName==="TEXTAREA" && t.closest(".field")){ t.style.height="auto"; t.style.height=Math.min(t.scrollHeight+2,140)+"px"; } });
 
 render();
