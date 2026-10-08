@@ -93,7 +93,8 @@ h2 small{font-family:var(--body);font-size:var(--fs-sub);color:var(--muted);font
 .banner button{border:0;background:var(--surface);border-radius:8px;padding:6px 10px;font-weight:600;font-size:var(--fs-sub);white-space:nowrap}
 
 .monthbar{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px}
-.monthbar button{border:0;background:transparent;width:40px;height:36px;border-radius:9px;font-size:var(--fs-headline);color:var(--muted)}
+.monthbar button{border:0;background:transparent;width:40px;height:36px;border-radius:9px;padding:0;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.monthbar button svg{width:20px;height:20px;display:block}
 .monthbar button:active{background:var(--surface-2)}
 .monthbar strong{font-family:var(--body);font-weight:600;font-size:var(--fs-headline)}
 
@@ -239,7 +240,8 @@ nav.tabs svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1
 nav.tabs svg{box-sizing:content-box;padding:4px 18px;border-radius:999px;transition:background .15s}
 nav.tabs button[aria-current="page"]{color:var(--ink);font-weight:700}
 nav.tabs button[aria-current="page"] svg{background:var(--accent-soft);stroke-width:2.1}
-.fab{position:fixed;right:16px;bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:7;width:56px;height:56px;border-radius:18px;border:0;background:var(--accent);color:var(--accent-ink);font-size:30px;line-height:1;box-shadow:0 6px 18px rgba(14,107,90,.35)}
+.fab{position:fixed;right:16px;bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:7;width:56px;height:56px;border-radius:18px;border:0;background:var(--accent);color:var(--accent-ink);padding:0;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(14,107,90,.35)}
+.fab svg{width:26px;height:26px;display:block}
 @media (min-width:680px){.fab{right:calc(50% - 320px + 16px)}}
 
 /* sheet */
@@ -251,10 +253,11 @@ nav.tabs button[aria-current="page"] svg{background:var(--accent-soft);stroke-wi
 .sheethead{flex-shrink:0}
 .sheethead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .sheethead h3{font-family:var(--display);font-size:var(--fs-h2);margin:0;text-wrap:balance}
-.close{border:0;background:var(--surface-2);border-radius:999px;width:32px;height:32px;font-size:var(--fs-headline);color:var(--muted);flex-shrink:0}
+.close{border:0;background:var(--surface-2);border-radius:999px;width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0}
+.close svg{width:14px;height:14px;display:block}
 form{display:flex;flex-direction:column;gap:8px}
-form.sheetform{display:flex;flex-direction:column;gap:0;min-height:0;flex:1 1 auto}
-.sheet:has(form.sheetform){overflow:hidden}
+.sheetform{display:flex;flex-direction:column;gap:0;min-height:0;flex:1 1 auto}
+.sheet:has(.sheetform){overflow:hidden}
 .formbody{display:flex;flex-direction:column;gap:8px;overflow-y:auto;min-height:0;flex:1 1 auto;padding:3px 3px 4px;margin:-3px -3px 0;overscroll-behavior:contain}
 .formfoot{flex-shrink:0;display:flex;flex-direction:column;gap:8px;margin-top:12px;padding-top:14px;border-top:1px solid var(--line)}
 .two.narrow-first{grid-template-columns:minmax(0,1fr) minmax(0,2.2fr)}
@@ -325,7 +328,7 @@ nav.tabs button[aria-current="page"]{color:var(--ink)}
   <button class="iconbtn" id="btn-data" data-act="data">Settings</button>
 </header>
 <main id="view"></main>
-<button class="fab" id="fab" data-act="plus" aria-label="Add new">+</button>
+<button class="fab" id="fab" data-act="plus" aria-label="Add new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
 <nav class="tabs" id="tabs">
   <button data-tab="home"><svg viewBox="0 0 24 24"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>Overview</button>
   <button data-tab="orders"><svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>Orders</button>
@@ -343,6 +346,11 @@ const STATUS = {inquiry:"Inquiry", confirmed:"Confirmed", done:"Done", cancelled
 const TYPES = ["Wedding","Engagement","Birthday","Graduation","Corporate event","Condolence (Fatiha)","Religious occasion","Other"];
 const CAT_IN = ["Deposit","Final payment","Payment","Tip","Other income"];
 const CAT_OUT = ["Food","Drinks","Staff","Equipment & rental","Transport","Fixed costs","Other"];
+/* entries the owner adds himself: occasions, expense and income categories, suppliers. The defaults above stay; these come on top. */
+const NEW = "__new__";
+const CUSTOM_OF = {type:"types", catIn:"catIn", catOut:"catOut", supplier:"suppliers"};
+const normList = a => { const seen = new Set(), out = []; for(const x of (Array.isArray(a) ? a : [])){ const t = String(x==null ? "" : x).trim().replace(/\s+/g," "), k = t.toLowerCase(); if(t && !seen.has(k)){ seen.add(k); out.push(t); } } return out; };
+const normCustom = c => { c = c || {}; const o = {}; for(const k of Object.values(CUSTOM_OF)) o[k] = normList(c[k]); return o; };
 const UNITS = {guest:{en:"per guest",ar:"لكل ضيف",ku:"بۆ هەر میوانێک"}, person:{en:"per person",ar:"لكل شخص",ku:"بۆ هەر کەسێک"}, day:{en:"per day",ar:"لكل يوم",ku:"بۆ هەر ڕۆژێک"}, pcs:{en:"pcs",ar:"قطعة",ku:"دانە"}, flat:{en:"flat rate",ar:"مبلغ مقطوع",ku:"بڕی دیاریکراو"}};
 const TYPES_AR = {"Wedding":"زفاف","Engagement":"خطوبة","Birthday":"عيد ميلاد","Graduation":"حفل تخرج","Corporate event":"مناسبة شركة","Condolence (Fatiha)":"مجلس عزاء","Religious occasion":"مناسبة دينية","Other":"مناسبة"};
 const TYPES_KU = {"Wedding":"ئاهەنگی هاوسەرگیری","Engagement":"دەستگیرانی","Birthday":"ڕۆژی لەدایکبوون","Graduation":"ئاهەنگی دەرچوون","Corporate event":"بۆنەی کۆمپانیا","Condolence (Fatiha)":"پرسە","Religious occasion":"بۆنەی ئایینی","Other":"بۆنە"};
@@ -551,7 +559,7 @@ function normalize(d){
   const orders = d.orders.filter(o=>o && isDate(o.date)).map(o=>{
     const c = cur(o.currency);
     const status = STATUS[o.status] ? o.status : (LEGACY.status[o.status]||"inquiry");
-    const type = TYPES.includes(o.type) ? o.type : (LEGACY.type[o.type]||"Other");
+    const type = (TYPES.includes(o.type) && o.type) || (Object.prototype.hasOwnProperty.call(LEGACY.type, o.type) ? LEGACY.type[o.type] : "") || str(o.type).trim().replace(/\s+/g," ") || "Other";
     const endDate = isDate(o.endDate) && o.endDate > o.date ? o.endDate : "";
     const inRange = a => Array.isArray(a) ? [...new Set(a.filter(k => isDate(k) && k >= o.date && k <= endDate))].sort() : [];
     const weekdays = Array.isArray(o.weekdays) ? [...new Set(o.weekdays.map(Number).filter(n => n>=0 && n<=6))] : WD_DEFAULT.slice();
@@ -567,7 +575,7 @@ function normalize(d){
       const c = CUR[t.currency] ? t.currency : (orderId ? oc.get(orderId) : settings.main);
       const cats = t.kind==="in" ? CAT_IN : CAT_OUT;
       const category = cats.includes(t.category) ? t.category : (LEGACY.cat[t.category] && cats.includes(LEGACY.cat[t.category]) ? LEGACY.cat[t.category] : (str(t.category)||cats[cats.length-1]));
-      return {id:str(t.id)||uid(), orderId, kind:t.kind, category, amount:roundC(Number(t.amount),c), currency:c, rate: Number(t.rate)>0 ? Number(t.rate) : settings.rate, date:t.date, note:str(t.note)};
+      return {id:str(t.id)||uid(), orderId, kind:t.kind, category, amount:roundC(Number(t.amount),c), currency:c, rate: Number(t.rate)>0 ? Number(t.rate) : settings.rate, date:t.date, note:str(t.note), supplier: t.kind==="out" ? str(t.supplier).trim().replace(/\s+/g," ") : ""};
     });
   const catalog = Array.isArray(d.catalog) ? d.catalog.filter(x=>x && str(x.name).trim()).map(x=>{
       const pr = {USD:null, IQD:null};
@@ -576,7 +584,7 @@ function normalize(d){
       if(pr.USD==null && pr.IQD==null) pr.IQD = 0;
       return {id:str(x.id)||uid(), name:str(x.name).trim(), nameAr:str(x.nameAr).trim()||glossaryFor(x.name)[1]||"", nameKu:str(x.nameKu).trim()||glossaryFor(x.name)[2]||"", unit: UNITS[x.unit] ? x.unit : "flat", prices: pr};
     }) : seedCatalog();
-  return {v:VERSION, sample:!!d.sample && d.v===VERSION, settings, orders, tx, catalog};
+  return {v:VERSION, sample:!!d.sample && d.v===VERSION, settings, orders, tx, catalog, custom: normCustom(d.custom)};
 }
 function normBusiness(b){ b = b||{}; const s = k => b[k]==null ? "" : String(b[k]);
   return {name: s("name") || DEFAULT_BUSINESS, phone: s("phone"), address: s("address"), email: s("email"), note: s("note")}; }
@@ -635,7 +643,7 @@ function seed(){
     items:(items||[]).map(([name,nameAr,unit,qty,price])=>({id:uid(),name,nameAr,nameKu:(GLOSSARY.find(g=>g[0]===name)||[])[2]||"",unit,qty,price})), discount:0, invoiceNo:"", quoteNo:""});
   const t = (orderId,kind,category,amount,currency,date,note)=>({id:uid(),orderId,kind,category,amount,currency,rate:DEFAULT_RATE,date,note:note||""});
   return {
-    v:VERSION, sample:true, settings:{main:"USD", rate:DEFAULT_RATE, lastBackup:"", theme:"system", business:normBusiness({}), seq:{inv:{},q:{}}}, catalog: seedCatalog(),
+    v:VERSION, sample:true, settings:{main:"USD", rate:DEFAULT_RATE, lastBackup:"", theme:"system", business:normBusiness({}), seq:{inv:{},q:{}}}, catalog: seedCatalog(), custom: normCustom(),
     orders:[
       o("o7","Summer party, Al-Noor kindergarten","Other","2026-07-11","16:00","Mrs. Huda (director)","0770 412 3388","Kindergarten garden","90",1900000,"IQD","done",""),
       o("o8","Graduation, College of Engineering","Graduation","2026-08-22","18:00","Class committee, Omar","0781 220 5541","University club hall","140",3000,"USD","done",""),
@@ -729,9 +737,52 @@ applyTheme();
 try{ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ()=>{ if(S.settings.theme==="system") applyTheme(); }); }catch(e){}
 if(storageOK) save(); // persist migrations / first-run sample
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); storageOK = true; }catch(e){ storageOK = false; } }
-const emptyState = () => ({v:VERSION, sample:false, settings:{...S.settings}, orders:[], tx:[], catalog:S.catalog});
+const emptyState = () => ({v:VERSION, sample:false, settings:{...S.settings}, orders:[], tx:[], catalog:S.catalog, custom:S.custom});
 
 const byId = id => S.orders.find(o=>o.id===id);
+/* choices for the creatable dropdowns: defaults, then own entries (saved ones plus any value already in use), "Other" stays last */
+function choices(kind){
+  if(kind==="supplier") return normList([...S.custom.suppliers, ...S.tx.map(t=>t.supplier)]).sort((a,b)=>a.localeCompare(b,"en",{sensitivity:"base"}));
+  const base = kind==="type" ? TYPES : kind==="catIn" ? CAT_IN : CAT_OUT;
+  const used = kind==="type" ? S.orders.map(o=>o.type) : S.tx.filter(t=>t.kind===(kind==="catIn"?"in":"out")).map(t=>t.category);
+  const known = new Set(base.map(x=>x.toLowerCase()));
+  const extra = normList([...S.custom[CUSTOM_OF[kind]], ...used]).filter(x=>!known.has(x.toLowerCase()));
+  return [...base.slice(0,-1), ...extra, base[base.length-1]];
+}
+/* a typed name: reuse an existing one when it only differs in capital letters */
+function pickName(kind, raw){
+  const name = String(raw||"").trim().replace(/\s+/g," ").slice(0,40);
+  const hit = choices(kind).find(x=>x.toLowerCase()===name.toLowerCase());
+  return {name: hit || name, isNew: !!name && !hit};
+}
+function addCustom(kind, name){ const list = S.custom[CUSTOM_OF[kind]]; if(!list.some(x=>x.toLowerCase()===name.toLowerCase())) list.push(name); }
+const newOpt = label => '<option value="'+NEW+'">+ '+label+' …</option>';
+const newField = (id, label, ph) => '<div class="field" id="'+id+'-w" hidden><label for="'+id+'">'+label+'</label><input id="'+id+'" maxlength="40" autocomplete="off" placeholder="'+esc(ph)+'"></div>';
+function wireNew(sh, selId, inpId){
+  const sel = sh.querySelector("#"+selId), wrap = sh.querySelector("#"+inpId+"-w"), inp = sh.querySelector("#"+inpId);
+  const sync = focus => { const on = sel.value===NEW; wrap.hidden = !on; if(on && focus){ try{ inp.focus(); wrap.scrollIntoView({block:"nearest"}); }catch(e){} } };
+  sel.addEventListener("change", () => sync(true)); sync(false);
+  return sync;
+}
+/* settings: the entries added by hand, with a way to remove the unused ones */
+function listsSection(){
+  const KINDS = [["type","Occasion"],["catOut","Expense category"],["catIn","Income category"],["supplier","Supplier"]];
+  const baseOf = {type:TYPES, catIn:CAT_IN, catOut:CAT_OUT};
+  const usage = (kind, x) => kind==="type" ? S.orders.filter(o=>o.type===x).length
+    : kind==="supplier" ? S.tx.filter(t=>t.supplier===x).length
+    : S.tx.filter(t=>t.kind===(kind==="catIn"?"in":"out") && t.category===x).length;
+  let rows = "";
+  for(const [kind,label] of KINDS){
+    const base = new Set((baseOf[kind]||[]).map(x=>x.toLowerCase()));
+    for(const x of choices(kind).filter(x=>!base.has(x.toLowerCase()))){
+      const n = usage(kind,x);
+      const used = !n ? "not used yet" : kind==="type" ? "used in "+plural(n,"order") : "used in "+n+(n===1?" entry":" entries");
+      rows += '<div class="row"><div class="main"><span class="t">'+esc(x)+'</span><span class="s">'+label+' · '+used+'</span></div>'+
+        (n ? '' : '<div class="end"><button class="txdel" data-act="dellist" data-kind="'+kind+'" data-name="'+esc(x)+'">Remove</button></div>')+'</div>';
+    }
+  }
+  return rows ? '<section id="set-lists"><h2>Your lists</h2><p class="hint" style="margin-top:-4px">Occasions, categories and suppliers you added yourself. Add new ones directly in the forms. Unused ones can be removed here.</p><div class="list">'+rows+'</div></section>' : "";
+}
 /* all figures of an order in the order's own currency */
 /* a tip is extra money on top of the price: it counts as income, but not towards what the customer owes */
 const isTip = t => t.kind==="in" && t.category==="Tip";
@@ -775,7 +826,7 @@ const inDays = d => d===0?"today":d===1?"tomorrow":d===-1?"yesterday":d>0?"in "+
 
 function monthBar(which){
   const a = U[which];
-  return '<div class="monthbar"><button data-act="mprev" data-w="'+which+'" aria-label="Previous month">‹</button><strong>'+MONTHS[a[1]]+' '+a[0]+'</strong><button data-act="mnext" data-w="'+which+'" aria-label="Next month">›</button></div>';
+  return '<div class="monthbar"><button data-act="mprev" data-w="'+which+'" aria-label="Previous month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><strong>'+MONTHS[a[1]]+' '+a[0]+'</strong><button data-act="mnext" data-w="'+which+'" aria-label="Next month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button></div>';
 }
 function orderRow(o){
   const d = toDate(o.date), f = fin(o);
@@ -909,7 +960,7 @@ function vFin(){
 function txRow(t){
   const o = t.orderId? byId(t.orderId):null;
   const flag = OVER.has(t.id);
-  return '<button class="row'+(flag?' flagrow':'')+'" data-act="edittx" data-id="'+t.id+'"><div class="main"><span class="t">'+esc(t.category)+(t.note?' <span class="muted" style="font-weight:400">· '+esc(t.note)+'</span>':'')+'</span><span class="s">'+fmtShort(t.date)+' · '+(o?esc(o.title):'General')+'</span></div><div class="end"><span class="amt num '+(t.kind==="in"?'pos':'')+'">'+(t.kind==="in"?'+':'−')+fmt(t.amount,t.currency)+'</span>'+(flag?'<span class="pill p-bad">More than due</span>':'')+'</div></button>';
+  return '<button class="row'+(flag?' flagrow':'')+'" data-act="edittx" data-id="'+t.id+'"><div class="main"><span class="t">'+esc(t.category)+(t.note?' <span class="muted" style="font-weight:400">· '+esc(t.note)+'</span>':'')+'</span><span class="s">'+fmtShort(t.date)+(t.supplier?' · '+esc(t.supplier):'')+' · '+(o?esc(o.title):'General')+'</span></div><div class="end"><span class="amt num '+(t.kind==="in"?'pos':'')+'">'+(t.kind==="in"?'+':'−')+fmt(t.amount,t.currency)+'</span>'+(flag?'<span class="pill p-bad">More than due</span>':'')+'</div></button>';
 }
 
 /* ---------- render ---------- */
@@ -935,7 +986,7 @@ function toast(msg){
 /* ---------- sheets ---------- */
 const root = document.getElementById("sheet-root");
 function openSheet(title, body, after){
-  root.innerHTML = '<div class="scrim" data-act="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="'+esc(title)+'"><div class="grab"></div><div class="sheethead"><h3>'+esc(title)+'</h3><button class="close" data-act="close" aria-label="Close">×</button></div>'+body+'</div></div>';
+  root.innerHTML = '<div class="scrim" data-act="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="'+esc(title)+'"><div class="grab"></div><div class="sheethead"><h3>'+esc(title)+'</h3><button class="close" data-act="close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>'+body+'</div></div>';
   if(after) after(root.querySelector(".sheet"));
 }
 function closeSheet(){ root.innerHTML=""; }
@@ -1076,8 +1127,9 @@ function sheetOrderForm(id, presetDate){
   const opt = (arr,v)=>arr.map(x=>'<option'+(x===v?' selected':'')+'>'+esc(x)+'</option>').join("");
   const body = '<form id="f-order" class="sheetform" novalidate><div class="formbody">'+
     '<div class="field"><label for="of-title">Name of the order</label><input id="of-title" required placeholder="e.g. Wedding Ahmed & Zainab" value="'+esc(o.title)+'"></div>'+
-    '<div class="two"><div class="field"><label for="of-type">Occasion</label><select id="of-type" required><option value="" disabled'+(o.type?'':' selected')+'>Choose</option>'+opt(TYPES,o.type)+'</select></div>'+
+    '<div class="two"><div class="field"><label for="of-type">Occasion</label><select id="of-type" required><option value="" disabled'+(o.type?'':' selected')+'>Choose</option>'+opt(choices("type"),o.type)+newOpt("New occasion")+'</select></div>'+
     '<div class="field"><label for="of-status">Status</label><select id="of-status">'+Object.entries(STATUS).map(([k,l])=>'<option value="'+k+'"'+(o.status===k?' selected':'')+'>'+l+'</option>').join("")+'</select></div></div>'+
+    newField("of-newtype","New occasion","e.g. Henna night")+
     '<div class="two"><div class="field"><div class="lblrow"><label for="of-date" id="of-date-l">'+(multi?'From':'Date')+'</label><button type="button" class="linkbtn" id="of-multi" aria-expanded="'+multi+'">'+(multi?'One day':'Several days')+'</button></div><input id="of-date" type="date" required value="'+esc(o.date)+'"></div>'+
     '<div class="field"><label for="of-time">Time</label><input id="of-time" type="time" value="'+esc(o.time)+'"></div></div>'+
     '<div class="range" id="of-range"'+(multi?'':' hidden')+'><div class="two pair"><div class="field"><label for="of-end">Until</label><input id="of-end" type="date" value="'+esc(o.endDate||"")+'"></div><div class="field"><label>Days</label><p class="rangeinfo num" id="of-count"></p></div></div>'+
@@ -1094,6 +1146,7 @@ function sheetOrderForm(id, presetDate){
     '<div class="formfoot"><button class="btn" type="submit">'+(id?'Save changes':'Create order')+'</button></div></form>';
   openSheet(id?"Edit order":"New order", body, sh=>{
     const price = sh.querySelector("#of-price"), convEl = sh.querySelector("#of-conv");
+    wireNew(sh, "of-type", "of-newtype");
     const fromItems = !!(o.items && o.items.length);
     if(fromItems) sh.querySelectorAll("#of-cur button").forEach(b=>{ b.disabled = true; });
     const upd = () => { if(fromItems) return; price.placeholder = c==="IQD" ? "e.g. 2,500,000" : "e.g. 2,450"; const v=parseAmount(price.value,c); const other=c==="USD"?"IQD":"USD";
@@ -1121,6 +1174,8 @@ function sheetOrderForm(id, presetDate){
       const fail = m => { err.textContent=m; err.hidden=false; };
       if(!v("title").trim()) return fail("Please give the order a name.");
       if(!v("type")) return fail("Please choose the occasion.");
+      let typeName = v("type"), typeNew = false;
+      if(typeName===NEW){ const r = pickName("type", v("newtype")); if(!r.name) return fail("Please type the name of the new occasion."); typeName = r.name; typeNew = r.isNew; }
       if(!isDate(v("date"))) return fail("Please choose a date.");
       if(multi){
         if(!isDate(v("end")) || v("end") <= v("date")) return fail("The end date must be after the start date.");
@@ -1132,10 +1187,11 @@ function sheetOrderForm(id, presetDate){
       if(isNaN(p)) return fail("The price is not a valid number. Example: "+(c==="IQD"?"2,500,000":"2,450"));
       const guests = v("guests").trim();
       if(guests && !/^\d+$/.test(parseAmount(guests,"IQD")+"")) return fail("Guests must be a whole number.");
-      const data = {title:v("title").trim(),type:v("type"),status:v("status"),date:v("date"),time:v("time"),customer:v("customer").trim(),phone:v("phone").trim(),guests:guests?String(parseAmount(guests,"IQD")):"",location:v("location").trim(),price:p,currency:c,notes:v("notes").trim(),
+      const data = {title:v("title").trim(),type:typeName,status:v("status"),date:v("date"),time:v("time"),customer:v("customer").trim(),phone:v("phone").trim(),guests:guests?String(parseAmount(guests,"IQD")):"",location:v("location").trim(),price:p,currency:c,notes:v("notes").trim(),
         endDate: multi ? v("end") : "", weekdays: multi ? wd.slice().sort() : WD_DEFAULT.slice()};
       const keep = a => multi ? (a||[]).filter(k => k >= data.date && k <= data.endDate) : [];
       data.on = keep(o.on); data.off = keep(o.off);
+      if(typeNew) addCustom("type", typeName);
       if(id){ const wasMulti = isMulti(o); Object.assign(o,data);
         if(wasMulti && !isMulti(o)) (o.items||[]).forEach(it => { if(it.unit==="day") it.qty = 1; });   /* per-day services: one day again */
         syncPrice(o); } else { Object.assign(data,{items:[],discount:0,invoiceNo:"",quoteNo:""}); data.id=uid(); S.orders.push(data); id=data.id; }
@@ -1150,14 +1206,18 @@ function sheetTxForm(txId, kind, orderId, preset){
   const t = txId? S.tx.find(x=>x.id===txId) : {kind:kind||"out",category:preset.cat||"",amount:preset.amount||"",currency:ord0?ord0.currency:main(),rate:S.settings.rate,date:todayISO,orderId:orderId||null,note:""};
   let k = t.kind, c = t.currency, curTouched = !!txId;
   const orders = S.orders.slice().sort((a,b)=>b.date.localeCompare(a.date));
-  const catOpts = kk=>(kk==="in"?CAT_IN:CAT_OUT).map(x=>'<option'+(x===t.category?' selected':'')+'>'+esc(x)+'</option>').join("");
+  const catKind = kk => kk==="in" ? "catIn" : "catOut";
+  const catOpts = kk => choices(catKind(kk)).map(x=>'<option'+(x===t.category?' selected':'')+'>'+esc(x)+'</option>').join("")+newOpt("New category");
+  const supOpts = '<option value="">No supplier</option>'+choices("supplier").map(x=>'<option'+(x===t.supplier?' selected':'')+'>'+esc(x)+'</option>').join("")+newOpt("New supplier");
   const body = '<form id="f-tx" class="sheetform" novalidate><div class="formbody">'+
     '<div class="seg"><button type="button" data-k="in" aria-pressed="'+(k==="in")+'">Money in</button><button type="button" data-k="out" aria-pressed="'+(k==="out")+'">Money out</button></div>'+
     '<div class="field"><label for="tf-amount">Amount</label><div class="pricerow"><input id="tf-amount" type="text" inputmode="decimal" autocomplete="off" value="'+esc(fmtInput(t.amount,c))+'">'+curToggle("tf-cur",c)+'</div><p class="hint" id="tf-conv"></p>'+
       '<div class="rate txrate" id="tf-ratebox" hidden><label for="tf-rate">Rate for this entry</label><span>$1 = IQD</span><input id="tf-rate" type="text" inputmode="numeric" value="'+NF.IQD.format(t.rate||S.settings.rate)+'"></div></div>'+
     '<div class="two"><div class="field"><label for="tf-date" id="tf-date-l">'+(k==="in"?"Date paid":"Date spent")+'</label><input id="tf-date" type="date" required value="'+esc(t.date)+'"></div>'+
     '<div class="field"><label for="tf-cat">Category</label><select id="tf-cat">'+catOpts(k)+'</select></div></div>'+
+    newField("tf-newcat","New category","e.g. Packaging")+
     '<p class="hint datehint" id="tf-datehint" hidden></p>'+
+    '<div id="tf-supblock"'+(k==="out"?'':' hidden')+' style="display:flex;flex-direction:column;gap:8px"><div class="field"><label for="tf-sup">Supplier</label><select id="tf-sup">'+supOpts+'</select></div>'+newField("tf-newsup","New supplier","e.g. Al-Amin Market")+'</div>'+
     '<div class="field"><label for="tf-order">Belongs to order</label><select id="tf-order"><option value="">No order (general)</option>'+orders.map(o=>'<option value="'+o.id+'"'+(o.id===t.orderId?' selected':'')+'>'+esc(o.title)+' · '+fmtShort(o.date)+'</option>').join("")+'</select></div>'+
     '<div class="field"><label for="tf-note">Note</label><input id="tf-note" placeholder="e.g. Jameela market, 3 helpers" value="'+esc(t.note)+'"></div>'+
     '<p class="err" id="tf-err" hidden></p></div>'+
@@ -1171,6 +1231,7 @@ function sheetTxForm(txId, kind, orderId, preset){
       sh.querySelector("#tf-ratebox").hidden = target===c && main()===c;
       convEl.textContent = v>0 && target!==c && r>0 ? "≈ "+fmt(conv(v,c,target,r),target)+(o?" on this order":"") : "";
     };
+    const syncCat = wireNew(sh, "tf-cat", "tf-newcat"); wireNew(sh, "tf-sup", "tf-newsup");
     const setCur = wireCur(sh,"tf-cur",nc=>{ c=nc; curTouched=true; upd(); });
     ordSel.addEventListener("change",()=>{ const o=byId(ordSel.value); if(!curTouched){ c = o?o.currency:main(); setCur(c); } upd(); });
     amt.addEventListener("input",upd); sh.querySelector("#tf-rate").addEventListener("input",upd); upd();
@@ -1185,7 +1246,7 @@ function sheetTxForm(txId, kind, orderId, preset){
     sh.querySelector("#f-tx").addEventListener("input", () => { if(overOK){ overOK = null; saveBtn.textContent = saveLabel; sh.querySelector("#tf-err").hidden = true; } });
     sh.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>{
       k=b.dataset.k; sh.querySelectorAll(".seg button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
-      sh.querySelector("#tf-cat").innerHTML=catOpts(k); sh.querySelector("#tf-date-l").textContent = k==="in"?"Date paid":"Date spent";
+      sh.querySelector("#tf-cat").innerHTML=catOpts(k); sh.querySelector("#tf-newcat").value=""; syncCat(false); sh.querySelector("#tf-supblock").hidden = k!=="out"; sh.querySelector("#tf-date-l").textContent = k==="in"?"Date paid":"Date spent";
       if(!txId) sh.querySelector("h3").textContent = k==="in"?"Record payment":"Record expense";
     }));
     sh.querySelector("#f-tx").addEventListener("submit",e=>{
@@ -1197,7 +1258,10 @@ function sheetTxForm(txId, kind, orderId, preset){
       if(!isDate(v("date"))){ err.textContent="Please choose a date."; err.hidden=false; return; }
       const rate = parseAmount(v("rate"),"IQD");
       if(!(rate>0)){ err.textContent="Please enter the exchange rate as a number, e.g. 1,590."; err.hidden=false; return; }
-      const data = {kind:k,amount,currency:c,rate,date:v("date"),category:v("cat"),orderId:v("order")||null,note:v("note").trim()};
+      let cat = v("cat"), sup = k==="out" ? v("sup") : "", newCat = null, newSup = null;
+      if(cat===NEW){ const r = pickName(catKind(k), v("newcat")); if(!r.name){ err.textContent="Please type the name of the new category."; err.hidden=false; return; } cat = r.name; if(r.isNew) newCat = r.name; }
+      if(sup===NEW){ const r = pickName("supplier", v("newsup")); if(!r.name){ err.textContent="Please type the name of the new supplier."; err.hidden=false; return; } sup = r.name; if(r.isNew) newSup = r.name; }
+      const data = {kind:k,amount,currency:c,rate,date:v("date"),category:cat,supplier:sup,orderId:v("order")||null,note:v("note").trim()};
       /* payment above what is still due on the order → ask once before saving (a tip is fine) */
       const ord = data.orderId ? byId(data.orderId) : null;
       if(ord && k==="in" && data.category!=="Tip" && ord.price>0){
@@ -1211,6 +1275,8 @@ function sheetTxForm(txId, kind, orderId, preset){
           err.hidden = false; return;
         }
       }
+      if(newCat) addCustom(catKind(k), newCat);
+      if(newSup) addCustom("supplier", newSup);
       if(txId) Object.assign(t,data); else { data.id=uid(); S.tx.push(data); }
       save(); render();
       if(data.orderId) sheetOrder(data.orderId); else closeSheet();
@@ -1559,12 +1625,13 @@ async function shareFile(blob, name, title){
 function sheetDoc(id){
   const o = byId(id); if(!o) return;
   let kind = o.status==="inquiry" ? "quote" : "invoice", cur = o.currency, lang = "", busy = false;
-  const body = '<div class="seg" id="doc-kind" role="group" aria-label="Document"><button type="button" data-k="quote" aria-pressed="'+(kind==="quote")+'">Quote</button><button type="button" data-k="invoice" aria-pressed="'+(kind==="invoice")+'">Invoice</button></div>'+
+  const body = '<div class="sheetform"><div class="formbody">'+
+    '<div class="seg" id="doc-kind" role="group" aria-label="Document"><button type="button" data-k="quote" aria-pressed="'+(kind==="quote")+'">Quote</button><button type="button" data-k="invoice" aria-pressed="'+(kind==="invoice")+'">Invoice</button></div>'+
     '<div class="field"><label>Currency on the document</label>'+curToggle("doc-cur",cur)+'</div>'+
     '<div class="field"><label>Second language <span class="muted" style="font-weight:400">(English is always included)</span></label><div class="seg" id="doc-lang" role="group" aria-label="Second language"><button type="button" data-l="" aria-pressed="true">None</button><button type="button" data-l="ar" aria-pressed="false" lang="ar">العربية</button><button type="button" data-l="ku" aria-pressed="false" lang="ckb">کوردی</button></div></div>'+
     (!(o.items && o.items.length) ? '<p class="hint">Tip: add services to the order to list them one by one. Right now the document shows one line with the total.</p>' : '')+
-    '<div class="docprev" id="doc-prev" aria-live="polite"></div>'+
-    '<div class="formfoot" style="position:sticky;bottom:0;background:var(--bg);padding-bottom:4px"><button class="btn" id="doc-share" type="button">Share PDF</button><p class="hint" id="doc-num" style="text-align:center"></p></div>';
+    '<div class="docprev" id="doc-prev" aria-live="polite"></div></div>'+
+    '<div class="formfoot"><button class="btn" id="doc-share" type="button">Share PDF</button><p class="hint" id="doc-num" style="text-align:center"></p></div></div>';
   openSheet("Quote & invoice", body, sh=>{
     const prev = sh.querySelector("#doc-prev"), num = sh.querySelector("#doc-num");
     const draw = async () => {
@@ -1618,7 +1685,7 @@ function sheetData(focus){
     '<button class="btn ghost" data-act="savebiz">Save business details</button></section>'+
     '<section id="set-cat"><h2>Price list <small>'+S.catalog.length+'</small></h2><p class="hint" style="margin-top:-4px">Your standard services. Pick them in an order with two taps. The starting list has sample prices: adjust them to yours.</p>'+
     '<div class="list">'+(S.catalog.length ? S.catalog.map(x=>'<button class="row" data-act="editcat" data-cid="'+x.id+'"><div class="main"><span class="t">'+esc(x.name)+'</span><span class="s">'+(UNITS[x.unit]?UNITS[x.unit].en:"")+(x.nameAr?' · <span dir="rtl" lang="ar">'+esc(x.nameAr)+'</span>':'')+(x.nameKu?' · <span dir="rtl" lang="ckb">'+esc(x.nameKu)+'</span>':'')+'</span></div><div class="end"><span class="amt num">'+catPriceLabel(x)+'</span></div></button>').join("") : '<div class="empty">No services yet.</div>')+'</div>'+
-    '<button class="btn ghost" data-act="addcat">+ Add to price list</button></section>'+
+    '<button class="btn ghost" data-act="addcat">+ Add to price list</button></section>'+listsSection()+
     '<section><h2>Currency</h2>'+
     '<div class="field"><label>Show totals in</label><div class="seg" id="set-main"><button type="button" data-c="USD" aria-pressed="'+(m==="USD")+'">US dollar ($)</button><button type="button" data-c="IQD" aria-pressed="'+(m==="IQD")+'">Iraqi dinar (IQD)</button></div></div>'+
     '<div class="field"><label for="set-rate">Exchange rate</label><div class="rate"><span>$1 =</span><span>IQD</span><input id="set-rate" type="text" inputmode="numeric" value="'+NF.IQD.format(S.settings.rate)+'"><button class="btn ghost" data-act="saverate" style="padding:10px 14px">Save</button></div>'+
@@ -1638,7 +1705,7 @@ function sheetData(focus){
       }));
       sh.querySelector("#impfile").addEventListener("change",ev=>{ const f=ev.target.files&&ev.target.files[0]; if(!f) return;
         f.text().then(t=>{ try{ importText(t); }catch(err){ toast("That file is not a valid backup"); } }); });
-      if(focus){ const t = sh.querySelector(focus==="catalog" ? "#set-cat" : "#set-biz"); if(t) t.scrollIntoView({block:"start"}); }
+      if(focus){ const t = sh.querySelector(focus==="catalog" ? "#set-cat" : focus==="lists" ? "#set-lists" : "#set-biz"); if(t) t.scrollIntoView({block:"start"}); }
       sh.querySelectorAll("#set-main button").forEach(b=>b.addEventListener("click",()=>{
       S.settings.main=b.dataset.c; save(); render();
       sh.querySelectorAll("#set-main button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
@@ -1689,6 +1756,7 @@ document.addEventListener("click",e=>{
   if(a==="delitem") return arm(el,"Remove? Tap again",()=>{ const o=byId(id); o.items=o.items.filter(x=>x.id!==el.dataset.item); if(!o.items.length) o.discount=0; syncPrice(o); save(); render(); sheetOrder(id); toast("Service removed"); });
   if(a==="discount") return sheetDiscount(id);
   if(a==="doc") return sheetDoc(id);
+  if(a==="dellist"){ const key = CUSTOM_OF[el.dataset.kind], nm = el.dataset.name; if(!key) return; S.custom[key] = S.custom[key].filter(x=>x.toLowerCase()!==nm.toLowerCase()); save(); sheetData("lists"); return toast("Removed"); }
   if(a==="addcat") return sheetItem(null, null, null);
   if(a==="editcat") return sheetItem(null, null, el.dataset.cid);
   if(a==="delcat") return arm(el,"Remove? Tap again",()=>{ S.catalog=S.catalog.filter(x=>x.id!==el.dataset.item); save(); sheetData("catalog"); toast("Removed from price list"); });
@@ -1696,7 +1764,7 @@ document.addEventListener("click",e=>{
   if(a==="saverate"){ const r=parseAmount(document.getElementById("set-rate").value,"IQD"); if(!(r>0)){ toast("Enter the rate as a number, e.g. 1,590"); return; } S.settings.rate=r; save(); render(); document.getElementById("set-rate").value=NF.IQD.format(r); return toast("Rate saved: $1 = IQD "+NF.IQD.format(r)); }
   if(a==="clearsample") return arm(el,"Sure? Tap again",()=>{ S=emptyState(); save(); render(); toast("Ready for real orders"); });
   if(a==="reset") return arm(el,"Delete all data? Tap again",()=>{ S=emptyState(); save(); closeSheet(); render(); toast("Everything deleted"); });
-  if(a==="demo"){ const st={...S.settings}, cat=S.catalog; S=seed(); S.settings=st; if(cat && cat.length) S.catalog=cat; save(); closeSheet(); render(); return toast("Sample data loaded"); }
+  if(a==="demo"){ const st={...S.settings}, cat=S.catalog, cu=S.custom; S=seed(); S.settings=st; S.custom=cu; if(cat && cat.length) S.catalog=cat; save(); closeSheet(); render(); return toast("Sample data loaded"); }
   if(a==="backup"){ exportBackup(); return; }
   if(a==="import"){ try{ importText(document.getElementById("imp").value); }catch(err){ toast("That is not a valid backup"); } return; }
 });
